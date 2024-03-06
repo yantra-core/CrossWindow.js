@@ -261,7 +261,7 @@
         let source = event.targetWindowId;
         remoteEntMap[source] = remoteEntMap[source] || {};
 
-        console.log('Message received from another window:', source, data);
+        console.log('Message received from another window:', event, source, data);
         console.log('my window', crosswindow.windowId);
 
         let entityData = data;
@@ -278,11 +278,12 @@
           type = type.charAt(0).toUpperCase() + type.slice(1);
           // console.log('type', type, builder);
           builder[type]();
-          builder.isSensor(false);
+          // builder.isSensor(false);
           //builder.size(64)
           builder.velocity(entityData.velocity.x, entityData.velocity.y);
           builder.rotation(entityData.rotation);
           builder.x(position.x).y(position.y);
+          builder.z(1); // for now
           console.log('creating local ent', builder.config);
           let ent = builder.createEntity();
           remoteEntMap[source][entityData.id] = ent.id; // now we have a mapping of remoteId to localId
@@ -306,13 +307,13 @@
             localEnt.position.z = 1;
         
             let windowMeta = crosswindow.getWindowMetadata(source);
-            console.log('wwww', windowHeight.position)
+            console.log('windowMeta', windowMeta)
             // TODO: apply proper zoom and offset based on current and target window position diff and zoom
             //localEnt.position.x = localEnt.position.x + entityData.screenPosition.x / game.data.camera.currentZoom - windowMeta.position.x;
             //localEnt.position.y = localEnt.position.y + entityData.screenPosition.y / game.data.camera.currentZoom - windowMeta.position.y;
 
             //localEnt.screenPosition = entityData.screenPosition;
-            console.log('updating local ent', localEnt.id, localEnt);
+            console.log('updating local ent', localEnt.id, entityData, localEnt);
             game.updateEntity(localEnt.id, localEnt);
           }
         }
@@ -354,13 +355,14 @@
 
         game.setBackground('#000000');
         game.make().Player().createEntity();
-
+        /*
         for (let i = 0; i < 10; i++) {
           let randomRadial = game.radialSpread(0, 0, 100, 10, i);
           game.make().Key({
             position: randomRadial
           }).body(true).createEntity();
         }
+        */
 
       });
     });
