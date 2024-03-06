@@ -13,6 +13,17 @@
 
 
   <style>
+    #windowsContainer {
+      /* background-color: aqua; */
+      z-index: 8888;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      /* opacity: 0.3; */
+    }
+
     .main {
       position: relative;
       /* Makes .main the reference for absolutely positioned children */
@@ -30,6 +41,7 @@
       padding: 20px;
       font-size: 24px;
       cursor: pointer;
+      z-index: 9999;
     }
 
     button[data-direction="N"] {
@@ -104,21 +116,51 @@
     document.querySelectorAll('#directionButtons button').forEach(button => {
       button.addEventListener('click', function () {
         const direction = this.getAttribute('data-direction');
-        const { width, height } = window.screen;
         const windowWidth = window.innerWidth;
         const windowHeight = window.innerHeight;
-        let top = 100, left = 100;
+        const offsetX = window.screenX; // Current window's distance from the left edge of the screen
+        const offsetY = window.screenY; // Current window's distance from the top edge of the screen
+        let buffer = 10; // Define a buffer distance for the new window
+        let top = offsetY, left = offsetX;
 
         switch (direction) {
-          case 'N': top = 0; left = (width - windowWidth) / 2; break;
-          case 'NE': top = 0; left = width - windowWidth; break;
-          case 'E': top = (height - windowHeight) / 2; left = width - windowWidth; break;
-          case 'SE': top = height - windowHeight; left = width - windowWidth; break;
-          case 'S': top = height - windowHeight; left = (width - windowWidth) / 2; break;
-          case 'SW': top = height - windowHeight; left = 0; break;
-          case 'W': top = (height - windowHeight) / 2; left = 0; break;
-          case 'NW': top = 0; left = 0; break;
-        }        console.log('top', top, 'left', left);
+          case 'N':  // WORKING
+            top = offsetY - windowHeight - buffer;
+            left = offsetX - windowWidth;
+            break;
+          case 'NE': // WORKING
+            top = offsetY - windowHeight - buffer;
+            left = offsetX;
+            break;
+          case 'E': // WORKING
+            top = offsetY;
+            left = offsetX + buffer;
+            break;
+          case 'SE':
+            top = offsetY + windowHeight + buffer;
+            left = offsetX; // Align SE window with the E edge of the current window
+            break;
+          case 'S': // WORKING
+            top = offsetY + windowHeight + buffer;
+            left = offsetX - windowWidth; // Align S window with the bottom edge, offset to the left
+            break;
+          case 'SW':
+            top = offsetY + windowHeight + buffer;
+            left = offsetX - windowWidth * 2 - buffer; // Align SW window to the left of the S window
+            break;
+          case 'W': // WORKING
+            top = offsetY;
+            left = offsetX - windowWidth * 2 - buffer; // Align W window to the left of the current window
+            break;
+          case 'NW':
+            top = offsetY - windowHeight - buffer;
+            left = offsetX - windowWidth * 2 - buffer; // Align NW window above and to the left, similar to W and N
+            break;
+        }
+
+        console.log('top', top, 'left', left);
+
+        // Open new window with calculated top and left positions
         crosswindow.open('index.html', {
           width: windowWidth,
           height: windowHeight,
@@ -128,12 +170,13 @@
       });
     });
 
+
     document.addEventListener('DOMContentLoaded', (event) => {
 
       let game = new MANTRA.Game({
         graphics: ['css'], // array enum, 'babylon', 'css', 'three'
         // Plugins at construction
-        plugins: ['Player', 'RBush', 'Key', 'Block', 'Collectable', 'Teleporter', 'Gamepad', 'Bullet'],
+        plugins: ['Player', 'Hexapod', 'Tower', 'RBush', 'Key', 'Block', 'Collectable', 'Teleporter', 'Gamepad', 'Bullet'],
         width: 400,
         height: 300,
         gameRoot: 'http://192.168.1.80:7777'
@@ -143,121 +186,140 @@
 
       let remoteEntMap = {};
 
+      // TODO: create simple HTML + CSS boxes that track the position of the remote windows
+      // relative to the current window
+      // we should update or create the boxes on windowChanged event
+      // we will have access to currentWindowMetadata
+      /*
+        currentWindowMetadata.windowId
+        currentWindowMetadata.metadata
+        currentWindowMetadata.metadata.position
+        currentWindowMetadata.metadata.size
+
+      */
+      crosswindow.on('windowChanged', function (currentWindowMetadata) {
+        console.log('windowChanged', currentWindowMetadata);
+
+        if (currentWindowMetadata.windowId === crosswindow.windowId) {
+          // do not create a box for the current window
+          // return;
+        }
+
+        // Container where the boxes will be placed, assumed to fill the entire viewport
+        const container = document.getElementById('windowsContainer');
+
+        // Create an ID for the box element based on the windowId
+        const boxId = 'windowBox_' + currentWindowMetadata.windowId;
+
+        // Try to find an existing box for this window
+        let windowBox = document.getElementById(boxId);
+
+        // If no box exists for this window, create one
+        if (!windowBox) {
+          windowBox = document.createElement('div');
+          windowBox.id = boxId; // Set the ID for future reference
+          windowBox.style.textAlign = 'center';
+
+          // add a text span with windowId
+          let windowIdSpan = document.createElement('span');
+          windowIdSpan.textContent = currentWindowMetadata.windowId.split('-')[1];
+          // medium sized white font
+          windowIdSpan.style.fontSize = '24px';
+          windowIdSpan.style.color = 'red';
+          windowBox.appendChild(windowIdSpan);
+
+
+          container.appendChild(windowBox); // Add the new box to the container
+        }
+
+
+        console.log('setting post', currentWindowMetadata.metadata.position);
+        // Set CSS styles to position and size the box
+        windowBox.style.position = 'absolute';
+
+
+        // Calculate adjusted position based on current window's position to make it relative
+        let adjustedPosition = {
+          x: currentWindowMetadata.metadata.position.x - window.screenX,
+          y: currentWindowMetadata.metadata.position.y - window.screenY
+        };
+
+
+        let otherWindowSize = currentWindowMetadata.metadata.size;
+
+        // Adjust for the center of the current window's viewport
+        adjustedPosition.x += (otherWindowSize.width / 2);
+        adjustedPosition.y += (otherWindowSize.height / 2);
+
+        // Ensure the boxes stay within the viewport by clamping their positions
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const maxLeft = viewportWidth - 100; // Minimum size to keep the box visible
+        const maxTop = viewportHeight - 50; // Minimum size to keep the box visible
+
+        // Clamp the position to ensure the box stays within the viewport
+        adjustedPosition.x = Math.min(Math.max(adjustedPosition.x, 0), maxLeft);
+        adjustedPosition.y = Math.min(Math.max(adjustedPosition.y, 0), maxTop);
+
+        let scaleFactor = 0.2; // Example scale factor (20%)
+
+        adjustedPosition.x -= (otherWindowSize.width * scaleFactor) / 2;
+        adjustedPosition.y -= (otherWindowSize.height * scaleFactor) / 2;
+
+        windowBox.style.left = adjustedPosition.x + 'px';
+        windowBox.style.top = adjustedPosition.y + 'px';
+
+        // Calculate a relative window size based on scale of current window * size of other window
+        windowBox.style.width = (otherWindowSize.width * scaleFactor) + 'px';
+        windowBox.style.height = (otherWindowSize.height * scaleFactor) + 'px';
+
+        windowBox.style.border = '2px solid white';
+        windowBox.style.boxSizing = 'border-box';
+        windowBox.style.backgroundColor = 'rgba(0, 0, 0, 0.1)'; // Semi-transparent background
+
+
+        let absoluteOtherWindowPosition = {
+          x: currentWindowMetadata.metadata.position.x,
+          y: currentWindowMetadata.metadata.position.y
+        };
+        let absouteCurrentWindowPosition = {
+          x: window.screenX,
+          y: window.screenY
+        };
+        // Calculate the absolute distance from the current window
+        //let distance = Math.sqrt(Math.pow(adjustedPosition.x, 2) + Math.pow(adjustedPosition.y, 2));
+        let distance = Math.sqrt(Math.pow(absoluteOtherWindowPosition.x - absouteCurrentWindowPosition.x, 2) + Math.pow(absoluteOtherWindowPosition.y - absouteCurrentWindowPosition.y, 2));
+        distance = Math.round(distance); // Round the distance for better readability
+
+        // Check if the position and distance info span already exists, if not create one
+        let positionInfoSpan = windowBox.querySelector('.position-info');
+        if (!positionInfoSpan) {
+          positionInfoSpan = document.createElement('span');
+          positionInfoSpan.className = 'position-info'; // Add a class for potential styling
+          positionInfoSpan.style.display = 'block'; // Ensure it appears on a new line
+          positionInfoSpan.style.fontSize = '20px';
+          positionInfoSpan.style.color = 'white';
+          positionInfoSpan.style.textAlign = 'center';
+          windowBox.appendChild(positionInfoSpan);
+        }
+
+        // Update the position and distance text
+        positionInfoSpan.innerHTML = `X: ${adjustedPosition.x.toFixed(0)} <br/> Y: ${adjustedPosition.y.toFixed(0)} <br/> Dist: ${distance}px`;
+
+
+      });
+
+      crosswindow.pollWindows();
+
       crosswindow.on('message', function (event) {
         let data = event.data || event.payload; // fix this
         let action = event.action;
 
         if (action === 'intersecting') {
-          /*
-          game.flashMessage({
-            message: JSON.stringify(data.payload, true, 2),
-            duration: 5000,
-            type: 'info'
-          });
-          */
-
-          let source = event.sourceWindowId;
-          let target = event.targetWindowId;
-          let area = event.intersectionArea;
-          // game.flashMessage(JSON.stringify(area));
-          //console.log('intersection')
-          //console.log('area.position', area.position);
-
-          let windowWidth = window.innerWidth;
-          let windowHeight = window.innerHeight;
-          let worldPosition = {
-            x: area.position.x / game.data.camera.currentZoom,
-            y: area.position.y / game.data.camera.currentZoom
-          };
-          worldPosition.x = worldPosition.x - (windowWidth / 2);
-          worldPosition.y = worldPosition.y - (windowHeight / 2);
-
-          let worldArea = {
-            width: area.size.width / game.data.camera.currentZoom,
-            height: area.size.height / game.data.camera.currentZoom
-          };
-
-          // needs to be uncommecnt when camera not 0,0 ( moved )
-          // we can ignore the camera position for now ( testing )
-          //worldPosition.x = worldPosition.x + game.data.camera.position.x;
-          //worldPosition.y = worldPosition.y + game.data.camera.position.y;
-
-          //console.log('area.size', area.size);
-          //console.log('worldPosition', worldPosition);
-          //console.log('worldArea', worldArea);
-
-          // area.position
-          // area.size
-          if (game.systems.rbush) {
-            // Directly use the calculated worldPosition and worldArea for the query
-            var query = {
-              minX: worldPosition.x,
-              minY: worldPosition.y,
-              maxX: worldPosition.x + worldArea.width,
-              maxY: worldPosition.y + worldArea.height
-            };
-
-            //console.log('performing query in world coordinates', query);
-            let ents = game.systems.rbush.search(query);
-            if (ents.length) {
-              console.log('found ents in world coordinates', ents);
-            }
-
-            if (ents.length) {
-              // iterate through all the ents, remove them and add them to the other window
-              for (let i = 0; i < ents.length; i++) {
-                let entity = game.getEntity(ents[i]);
-                entity.position.z = 1;
-                entity.screenPosition = {
-                  x: entity.position.x * game.data.camera.currentZoom + (windowWidth / 2),
-                  y: entity.position.y * game.data.camera.currentZoom + (windowHeight / 2),
-                  z: 1
-                };
-                console.log(ents[i], entity)
-                let entityData = {
-                  id: entity.id,
-                  type: entity.type,
-                  position: entity.position,
-                  rotation: entity.rotation,
-                  velocity: entity.velocity,
-                  rotation: entity.rotation,
-                  body: true,
-                  screenPosition: entity.screenPosition
-                };
-
-                console.log('entityData', entityData);
-
-                crosswindow.sendMessage(source, entityData);
-                console.log('Message sent to parent window:', source, entityData);
-                console.log('my current window', crosswindow.windowId);
-                console.log("the target was", target)
-                // instead of just a remove / create here
-                // should we instead have an updateEntity method?
-                // such that the items never get scooped up, just duplicated?
-                // should work, but we do need to keep a local mapping table here
-                // of remote entId to localId so we can update by remoteId
-                // ( ent ids wont match cross mantra instance )
-                // for now, until proper instection update is working 
-                // game.removeEntity(entityData.id);
-              }
-            }
-
-          }
-
-
+          handleIntersection(event);
           return;
         }
         //  game.flashMessage(action);
-        //alert(JSON.stringify(entityData, true, 2));
-
-        /*
-        game.flashMessage({
-          message: JSON.stringify(data, true, 2),
-          duration: 5000,
-          type: 'warn'
-        });
-        */
-        // alert('Message received from another window: ' + event.payload);
         let source = event.targetWindowId;
         remoteEntMap[source] = remoteEntMap[source] || {};
 
@@ -276,7 +338,7 @@
           let type = entityData.type;
           type = type.toLowerCase();
           type = type.charAt(0).toUpperCase() + type.slice(1);
-          // console.log('type', type, builder);
+          console.log('type', type, builder);
           builder[type]();
           // builder.isSensor(false);
           //builder.size(64)
@@ -285,7 +347,16 @@
           builder.x(position.x).y(position.y);
           builder.z(1); // for now
           console.log('creating local ent', builder.config);
+
+          if (builder.config.type === "PLAYER") {
+            // remove all other players ( for now )
+            game.removeEntitiesByType('PLAYER');
+          }
+
           let ent = builder.createEntity();
+          if (ent.type === "PLAYER") {
+            game.setPlayerId(ent.id);
+          }
           remoteEntMap[source][entityData.id] = ent.id; // now we have a mapping of remoteId to localId
           console.log('stored ref', ent.id, remoteEntMap[source][entityData.id])
         } else {
@@ -305,7 +376,7 @@
             let windowWidth = window.innerWidth;
             let windowHeight = window.innerHeight;
             localEnt.position.z = 1;
-        
+
             let windowMeta = crosswindow.getWindowMetadata(source);
             console.log('windowMeta', windowMeta)
             // TODO: apply proper zoom and offset based on current and target window position diff and zoom
@@ -354,7 +425,23 @@
         //game.reset();
 
         game.setBackground('#000000');
+
+        let currentWindows = crosswindow.getWindows();
         game.make().Player().createEntity();
+
+        // alert(Object.keys(currentWindows).length)
+        if (Object.keys(currentWindows).length <= 1) {
+        } else {
+          //         game.make().Hexapod().repeat(11).createEntity();
+          //game.make().Tower().color('red').angle(270).position(-32, 0).createEntity();
+          //game.make().Tower().color('orange').angle(0).position(0, -32).createEntity();
+
+          //game.make().Tower().color('yellow').angle(180).position(0, 32).createEntity();
+          //game.make().Tower().color('purple').angle(90).position(32, 0).createEntity();
+
+
+        }
+
         /*
         for (let i = 0; i < 10; i++) {
           let randomRadial = game.radialSpread(0, 0, 100, 10, i);
@@ -367,7 +454,111 @@
       });
     });
 
+
+    function handleIntersection(event) {
+      console.log('intersecting', event);
+      /*
+game.flashMessage({
+message: JSON.stringify(data.payload, true, 2),
+duration: 5000,
+type: 'info'
+});
+*/
+
+      let source = event.sourceWindowId;
+      let target = event.targetWindowId;
+      let area = event.intersectionArea;
+      // game.flashMessage(JSON.stringify(area));
+      //console.log('intersection')
+      //console.log('area.position', area.position);
+
+      let windowWidth = window.innerWidth;
+      let windowHeight = window.innerHeight;
+      let worldPosition = {
+        x: area.position.x / game.data.camera.currentZoom,
+        y: area.position.y / game.data.camera.currentZoom
+      };
+      worldPosition.x = worldPosition.x - (windowWidth / 2);
+      worldPosition.y = worldPosition.y - (windowHeight / 2);
+
+      let worldArea = {
+        width: area.size.width / game.data.camera.currentZoom,
+        height: area.size.height / game.data.camera.currentZoom
+      };
+
+      // needs to be uncommecnt when camera not 0,0 ( moved )
+      // we can ignore the camera position for now ( testing )
+      //worldPosition.x = worldPosition.x + game.data.camera.position.x;
+      //worldPosition.y = worldPosition.y + game.data.camera.position.y;
+
+      //console.log('area.size', area.size);
+      //console.log('worldPosition', worldPosition);
+      //console.log('worldArea', worldArea);
+
+      // area.position
+      // area.size
+      if (game.systems.rbush) {
+        // Directly use the calculated worldPosition and worldArea for the query
+        var query = {
+          minX: worldPosition.x,
+          minY: worldPosition.y,
+          maxX: worldPosition.x + worldArea.width,
+          maxY: worldPosition.y + worldArea.height
+        };
+
+        //console.log('performing query in world coordinates', query);
+        let ents = game.systems.rbush.search(query);
+        if (ents.length) {
+          console.log('found ents in world coordinates', ents);
+        }
+
+        if (ents.length) {
+          // iterate through all the ents, remove them and add them to the other window
+          for (let i = 0; i < ents.length; i++) {
+            let entity = game.getEntity(ents[i]);
+            entity.position.z = 1;
+            entity.screenPosition = {
+              x: entity.position.x * game.data.camera.currentZoom + (windowWidth / 2),
+              y: entity.position.y * game.data.camera.currentZoom + (windowHeight / 2),
+              z: 1
+            };
+            console.log(ents[i], entity)
+            let entityData = {
+              id: entity.id,
+              type: entity.type,
+              position: entity.position,
+              rotation: entity.rotation,
+              velocity: entity.velocity,
+              rotation: entity.rotation,
+              body: true,
+              screenPosition: entity.screenPosition
+            };
+
+            console.log('entityData', entityData);
+
+            crosswindow.sendMessage(source, entityData);
+            console.log('Message sent to parent window:', source, entityData);
+            console.log('my current window', crosswindow.windowId);
+            console.log("the target was", target)
+            // instead of just a remove / create here
+            // should we instead have an updateEntity method?
+            // such that the items never get scooped up, just duplicated?
+            // should work, but we do need to keep a local mapping table here
+            // of remote entId to localId so we can update by remoteId
+            // ( ent ids wont match cross mantra instance )
+            // for now, until proper instection update is working 
+            // game.removeEntity(entityData.id);
+          }
+        }
+
+      }
+    }
+
+
   </script>
+  <!-- Container where remote window boxes will be displayed -->
+  <div id="windowsContainer" style="position: absolute;"></div>
+
 </body>
 
 </html>
