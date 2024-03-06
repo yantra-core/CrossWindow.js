@@ -161,7 +161,7 @@
         console.log('top', top, 'left', left);
 
         // Open new window with calculated top and left positions
-        crosswindow.open('index.html', {
+        crosswindow.open('index.html?win', {
           width: windowWidth,
           height: windowHeight,
           top: top,
@@ -325,6 +325,39 @@
         let data = event.data || event.payload; // fix this
         let action = event.action;
 
+        if (event.payload && event.payload.action) {
+          // TODO: remove this old API
+          action = event.payload.action;
+          data = event.payload;
+        }
+
+        if (action === 'inputs') {
+          // don't process own inputs
+          console.log("eventeventevent", event)
+          // check to see if current window has focus, if so return
+          if (document.hasFocus()) {
+            return;
+          }
+          let controls = data.controls;
+          //console.log("WIINNNPUTS", controls);
+          for (let control in controls) {
+            let value = controls[control];
+            // console.log('control', control, 'value', value);
+            if (value === true) {
+              //game.rules.emit(control);
+              // dispatch a new KeyboardEvent to browser dom
+              // this will trigger the game's keyboard event listener
+              // and the game will handle the input
+              document.dispatchEvent(new KeyboardEvent('keydown', { 'code': 'Key' + control }));
+            } else {
+              //console.log("DOWN")
+              document.dispatchEvent(new KeyboardEvent('keyup', { 'code': 'Key' + control }));
+            }
+          }
+
+          return;
+        }
+
         if (action === 'intersecting') {
           handleIntersection(event);
           return;
@@ -341,7 +374,8 @@
         if (typeof remoteEntMap[source][entityData.id] === 'undefined') {
           // this local node has never seen this ent from the remote node
           // so we need to create it
-
+          // focus this window
+          window.focus();
           let position = entityData.position;
           let builder = game.make();
           // Entity Types as Builder Class
@@ -416,6 +450,29 @@
         }
       });
 
+      // listens for local game keyboard events and broadcasts them too all crosswindows
+      // this may not be needed if we assumed that window.focus() was always working
+      // and that user didn't click on wrong window by accident
+      game.on('keyboard::handleInputs', (data) => {
+        if (data && data.controls) {
+          // let currentInputs = data.controls; // TODO: gamepad merge scope
+          let currentInputs = data.controls || {};
+          if (Object.keys(currentInputs).length) {
+            // console.log('keyboard::handleInputs', data)
+            if (crosswindow && crosswindow.postMessage) {
+              crosswindow.postMessage('any', {
+                action: 'inputs',
+                //entityId: entityId,
+                controls: data.controls,
+                //sequenceNumber: sequenceNumber
+              });
+            }
+
+          }
+
+        }
+      });
+
       // listen to the Mantra event for when entity leaves the viewport
       game.on('entity::exited::viewport', function (entity) {
         let entityData = {
@@ -436,6 +493,8 @@
           console.log('Message sent to best window:', entityData, bestWindow);
         }
 
+        console.log('bestWindow', bestWindow)
+
         game.removeEntity(entity.id);
       });
 
@@ -452,7 +511,13 @@
         game.setBackground('#000000');
 
         let currentWindows = crosswindow.getWindows();
-        game.make().Player().createEntity();
+
+        // check if 'win' exists as query string variable, if no, so player
+        // if not, create player
+        let isSubWindow = window.location.search.includes('win');
+        if (!isSubWindow) {
+          game.make().Player().createEntity();
+        }
 
         // alert(Object.keys(currentWindows).length)
         if (Object.keys(currentWindows).length <= 1) {
