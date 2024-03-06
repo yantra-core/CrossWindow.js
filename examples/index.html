@@ -134,7 +134,7 @@
             break;
           case 'E': // WORKING
             top = offsetY;
-            left = offsetX + buffer;
+            left = offsetX + buffer + windowWidth / 2; // Align E window with the right edge of the current window
             break;
           case 'SE':
             top = offsetY + windowHeight + buffer;
@@ -150,7 +150,7 @@
             break;
           case 'W': // WORKING
             top = offsetY;
-            left = offsetX - windowWidth * 2 - buffer; // Align W window to the left of the current window
+            left = offsetX - buffer - windowWidth; // Align E window with the right edge of the current window
             break;
           case 'NW':
             top = offsetY - windowHeight - buffer;
@@ -197,6 +197,16 @@
         currentWindowMetadata.metadata.size
 
       */
+
+      crosswindow.on('windowClosed', function (currentWindowMetadata) {
+        // remove the window preview if exists
+        let windowBox = document.getElementById('windowBox_' + currentWindowMetadata.windowId);
+        if (windowBox) {
+          windowBox.remove();
+        }
+      });
+
+
       crosswindow.on('windowChanged', function (currentWindowMetadata) {
         console.log('windowChanged', currentWindowMetadata);
 
@@ -389,6 +399,21 @@
           }
         }
 
+      });
+
+      // this will render the current window box *once* immediately on load
+      crosswindow.emit('windowChanged', {
+        windowId: crosswindow.windowId,
+        metadata: {
+          position: {
+            x: window.screenX,
+            y: window.screenY
+          },
+          size: {
+            width: window.innerWidth,
+            height: window.innerHeight
+          }
+        }
       });
 
       // listen to the Mantra event for when entity leaves the viewport
