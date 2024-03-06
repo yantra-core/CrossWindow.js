@@ -208,7 +208,7 @@
 
 
       crosswindow.on('windowChanged', function (currentWindowMetadata) {
-        console.log('windowChanged', currentWindowMetadata);
+        // console.log('windowChanged', currentWindowMetadata);
 
         if (currentWindowMetadata.windowId === crosswindow.windowId) {
           // do not create a box for the current window
@@ -243,7 +243,7 @@
         }
 
 
-        console.log('setting post', currentWindowMetadata.metadata.position);
+        // console.log('setting post', currentWindowMetadata.metadata.position);
         // Set CSS styles to position and size the box
         windowBox.style.position = 'absolute';
 
@@ -333,7 +333,7 @@
 
         if (action === 'inputs') {
           // don't process own inputs
-          console.log("eventeventevent", event)
+          // console.log("eventeventevent", event)
           // check to see if current window has focus, if so return
           if (document.hasFocus()) {
             return;
@@ -363,11 +363,12 @@
           return;
         }
         //  game.flashMessage(action);
-        let source = event.targetWindowId;
+        let source = event.sourceWindowId;
         remoteEntMap[source] = remoteEntMap[source] || {};
 
-        console.log('Message received from another window:', event, source, data);
-        console.log('my window', crosswindow.windowId);
+        //console.log('Message received from another window:', event, source, data);
+        //console.log('my window', crosswindow.windowId);
+        //console.log("the source", source)
 
         let entityData = data;
         // TODO: make sure to GC this later on ent removal
@@ -382,7 +383,7 @@
           let type = entityData.type;
           type = type.toLowerCase();
           type = type.charAt(0).toUpperCase() + type.slice(1);
-          console.log('type', type, builder);
+          //console.log('type', type, builder);
           builder[type]();
           // builder.isSensor(false);
           //builder.size(64)
@@ -390,7 +391,7 @@
           builder.rotation(entityData.rotation);
           builder.x(position.x).y(position.y);
           builder.z(1); // for now
-          console.log('creating local ent', builder.config);
+          // console.log('creating local ent', builder.config);
 
           if (builder.config.type === "PLAYER") {
             // remove all other players ( for now )
@@ -402,7 +403,7 @@
             game.setPlayerId(ent.id);
           }
           remoteEntMap[source][entityData.id] = ent.id; // now we have a mapping of remoteId to localId
-          console.log('stored ref', ent.id, remoteEntMap[source][entityData.id])
+          //console.log('stored ref', ent.id, remoteEntMap[source][entityData.id])
         } else {
           // the local node has seen this ent from the remote node
           // so we need to update it
@@ -422,14 +423,17 @@
             localEnt.position.z = 1;
 
             let windowMeta = crosswindow.getWindowMetadata(source);
-            console.log('windowMeta', windowMeta)
+            //console.log('windowMeta', windowMeta)
             // TODO: apply proper zoom and offset based on current and target window position diff and zoom
             //localEnt.position.x = localEnt.position.x + entityData.screenPosition.x / game.data.camera.currentZoom - windowMeta.position.x;
             //localEnt.position.y = localEnt.position.y + entityData.screenPosition.y / game.data.camera.currentZoom - windowMeta.position.y;
 
             //localEnt.screenPosition = entityData.screenPosition;
-            console.log('updating local ent', localEnt.id, entityData, localEnt);
+            //console.log('updating local ent', localEnt.id, entityData, localEnt);
             game.updateEntity(localEnt.id, localEnt);
+          } else {
+            //console.log('tried to match remove to local ent not found', localId);
+            console.log(source, crosswindow.windowId, remoteEntMap);
           }
         }
 
@@ -454,6 +458,12 @@
       // this may not be needed if we assumed that window.focus() was always working
       // and that user didn't click on wrong window by accident
       game.on('keyboard::handleInputs', (data) => {
+
+        if (!document.hasFocus()) {
+          return;
+
+        }
+
         if (data && data.controls) {
           // let currentInputs = data.controls; // TODO: gamepad merge scope
           let currentInputs = data.controls || {};
@@ -476,6 +486,7 @@
       // listen to the Mantra event for when entity leaves the viewport
       game.on('entity::exited::viewport', function (entity) {
         let entityData = {
+          id: entity.id,
           type: entity.type,
           position: entity.position,
           rotation: entity.rotation,
@@ -484,18 +495,32 @@
           screenPosition: entity.screenPosition
         };
 
-        console.log('entityData', entityData);
+        // console.log('entityData', entityData);
 
         let bestWindow = crosswindow.getBestWindow(entityData);
-        console.log('found bestWinow', bestWindow)
+        // console.log('found bestWindow', bestWindow, crosswindow.windowId);
         if (bestWindow) {
-          bestWindow.postMessage(entityData);
-          console.log('Message sent to best window:', entityData, bestWindow);
+
+          //let entryPosition = bestWindow.entryPosition(direction, entityData);
+          //console.log('entryPositionentryPositionentryPosition')
+          if (bestWindow.windowId === crosswindow.windowId) {
+            // if the best window is the current window, then we don't need to send a message
+            // we can just remove the entity
+            // console.log("game.setPosition", bestWindow, entityData.position)
+            game.setPosition(entity.id, bestWindow.entryPosition);
+            //game.removeEntity(entity.id);
+            return;
+          } else {
+            bestWindow.postMessage(entityData);
+            //console.log('Message sent to best window:', entityData, bestWindow);
+            game.removeEntity(entity.id);
+
+          }
+
         }
 
-        console.log('bestWindow', bestWindow)
+        // console.log('bestWindow', bestWindow)
 
-        game.removeEntity(entity.id);
       });
 
 
