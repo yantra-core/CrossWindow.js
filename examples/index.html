@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+
+
+<head>
+  <title>CrossWindow.js Demo</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://yantra.gg/labyrinthos/browser/vendor/jquery.min.js"></script>
+  <meta name="description" content="A JavaScript procedural generator for Mazes, Terrains, and Biomes">
+  <script src="./mantra.js"></script>
+  <script src="./crosswindow.js"></script>
+
+
+  <style>
+    .main {
+      position: relative;
+      /* Makes .main the reference for absolutely positioned children */
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    button {
+      position: absolute;
+      /* Position buttons absolutely within .main */
+      padding: 20px;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    button[data-direction="N"] {
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    button[data-direction="NE"] {
+      top: 0;
+      right: 0;
+    }
+
+    button[data-direction="E"] {
+      top: 50%;
+      right: 0;
+      transform: translateY(-50%);
+    }
+
+    button[data-direction="SE"] {
+      bottom: 0;
+      right: 0;
+    }
+
+    button[data-direction="S"] {
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    button[data-direction="SW"] {
+      bottom: 0;
+      left: 0;
+    }
+
+    button[data-direction="W"] {
+      top: 50%;
+      left: 0;
+      transform: translateY(-50%);
+    }
+
+    button[data-direction="NW"] {
+      top: 0;
+      left: 0;
+    }
+
+    /* adds response query for width and button size */
+    @media (max-width: 600px) {
+      button {
+        padding: 10px;
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="directionButtons">
+
+    <button data-direction="NW">↖ NW</button>
+    <button data-direction="N">↑ N</button>
+    <button data-direction="NE">↗ NE</button>
+    <button data-direction="E">→ E</button>
+    <button data-direction="SE">↘ SE</button>
+    <button data-direction="S">↓ S</button>
+    <button data-direction="SW">↙ SW</button>
+    <button data-direction="W">← W</button>
+  </div>
+  <script>
+    let crosswindow = new CW.CrossWindow();
+
+    document.querySelectorAll('#directionButtons button').forEach(button => {
+      button.addEventListener('click', function () {
+        const direction = this.getAttribute('data-direction');
+        const { width, height } = window.screen;
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        let top = 100, left = 100;
+
+        switch (direction) {
+          case 'N': top = 0; left = (width - windowWidth) / 2; break;
+          case 'NE': top = 0; left = width - windowWidth; break;
+          case 'E': top = (height - windowHeight) / 2; left = width - windowWidth; break;
+          case 'SE': top = height - windowHeight; left = width - windowWidth; break;
+          case 'S': top = height - windowHeight; left = (width - windowWidth) / 2; break;
+          case 'SW': top = height - windowHeight; left = 0; break;
+          case 'W': top = (height - windowHeight) / 2; left = 0; break;
+          case 'NW': top = 0; left = 0; break;
+        }        console.log('top', top, 'left', left);
+        crosswindow.open('index.html', {
+          width: windowWidth,
+          height: windowHeight,
+          top: top,
+          left: left,
+        }, true);
+      });
+    });
+
+    document.addEventListener('DOMContentLoaded', (event) => {
+
+      let game = new MANTRA.Game({
+        graphics: ['css'], // array enum, 'babylon', 'css', 'three'
+        // Plugins at construction
+        plugins: ['Player', 'RBush', 'Key', 'Block', 'Collectable', 'Teleporter', 'Gamepad', 'Bullet'],
+        width: 400,
+        height: 300,
+        gameRoot: 'http://192.168.1.80:7777'
+      });
+      window.game = game;
+      game.config.entityEmitsViewportExitEvent = true;
+
+      let remoteEntMap = {};
+
+      crosswindow.on('message', function (event) {
+        let data = event.data || event.payload; // fix this
+        let action = event.action;
+
+        if (action === 'intersecting') {
+          /*
+          game.flashMessage({
+            message: JSON.stringify(data.payload, true, 2),
+            duration: 5000,
+            type: 'info'
+          });
+          */
+
+          let source = event.sourceWindowId;
+          let target = event.targetWindowId;
+          let area = event.intersectionArea;
+          // game.flashMessage(JSON.stringify(area));
+          //console.log('intersection')
+          //console.log('area.position', area.position);
+
+          let windowWidth = window.innerWidth;
+          let windowHeight = window.innerHeight;
+          let worldPosition = {
+            x: area.position.x / game.data.camera.currentZoom,
+            y: area.position.y / game.data.camera.currentZoom
+          };
+          worldPosition.x = worldPosition.x - (windowWidth / 2);
+          worldPosition.y = worldPosition.y - (windowHeight / 2);
+
+          let worldArea = {
+            width: area.size.width / game.data.camera.currentZoom,
+            height: area.size.height / game.data.camera.currentZoom
+          };
+
+          // needs to be uncommecnt when camera not 0,0 ( moved )
+          // we can ignore the camera position for now ( testing )
+          //worldPosition.x = worldPosition.x + game.data.camera.position.x;
+          //worldPosition.y = worldPosition.y + game.data.camera.position.y;
+
+          //console.log('area.size', area.size);
+          //console.log('worldPosition', worldPosition);
+          //console.log('worldArea', worldArea);
+
+          // area.position
+          // area.size
+          if (game.systems.rbush) {
+            // Directly use the calculated worldPosition and worldArea for the query
+            var query = {
+              minX: worldPosition.x,
+              minY: worldPosition.y,
+              maxX: worldPosition.x + worldArea.width,
+              maxY: worldPosition.y + worldArea.height
+            };
+
+            //console.log('performing query in world coordinates', query);
+            let ents = game.systems.rbush.search(query);
+            if (ents.length) {
+              console.log('found ents in world coordinates', ents);
+            }
+
+            if (ents.length) {
+              // iterate through all the ents, remove them and add them to the other window
+              for (let i = 0; i < ents.length; i++) {
+                let entity = game.getEntity(ents[i]);
+                entity.position.z = 1;
+                entity.screenPosition = {
+                  x: entity.position.x * game.data.camera.currentZoom + (windowWidth / 2),
+                  y: entity.position.y * game.data.camera.currentZoom + (windowHeight / 2),
+                  z: 1
+                };
+                console.log(ents[i], entity)
+                let entityData = {
+                  id: entity.id,
+                  type: entity.type,
+                  position: entity.position,
+                  rotation: entity.rotation,
+                  velocity: entity.velocity,
+                  rotation: entity.rotation,
+                  body: true,
+                  screenPosition: entity.screenPosition
+                };
+
+                console.log('entityData', entityData);
+
+                crosswindow.sendMessage(source, entityData);
+                console.log('Message sent to parent window:', source, entityData);
+                console.log('my current window', crosswindow.windowId);
+                console.log("the target was", target)
+                // instead of just a remove / create here
+                // should we instead have an updateEntity method?
+                // such that the items never get scooped up, just duplicated?
+                // should work, but we do need to keep a local mapping table here
+                // of remote entId to localId so we can update by remoteId
+                // ( ent ids wont match cross mantra instance )
+                // for now, until proper instection update is working 
+                // game.removeEntity(entityData.id);
+              }
+            }
+
+          }
+
+
+          return;
+        }
+        //  game.flashMessage(action);
+        //alert(JSON.stringify(entityData, true, 2));
+
+        /*
+        game.flashMessage({
+          message: JSON.stringify(data, true, 2),
+          duration: 5000,
+          type: 'warn'
+        });
+        */
+        // alert('Message received from another window: ' + event.payload);
+        let source = event.targetWindowId;
+        remoteEntMap[source] = remoteEntMap[source] || {};
+
+        console.log('Message received from another window:', source, data);
+        console.log('my window', crosswindow.windowId);
+
+        let entityData = data;
+        // TODO: make sure to GC this later on ent removal
+        if (typeof remoteEntMap[source][entityData.id] === 'undefined') {
+          // this local node has never seen this ent from the remote node
+          // so we need to create it
+
+          let position = entityData.position;
+          let builder = game.make();
+          // Entity Types as Builder Class
+          let type = entityData.type;
+          type = type.toLowerCase();
+          type = type.charAt(0).toUpperCase() + type.slice(1);
+          // console.log('type', type, builder);
+          builder[type]();
+          builder.isSensor(false);
+          //builder.size(64)
+          builder.velocity(entityData.velocity.x, entityData.velocity.y);
+          builder.rotation(entityData.rotation);
+          builder.x(position.x).y(position.y);
+          console.log('creating local ent', builder.config);
+          let ent = builder.createEntity();
+          remoteEntMap[source][entityData.id] = ent.id; // now we have a mapping of remoteId to localId
+          console.log('stored ref', ent.id, remoteEntMap[source][entityData.id])
+        } else {
+          // the local node has seen this ent from the remote node
+          // so we need to update it
+          // get the local ent
+          let localId = remoteEntMap[source][entityData.id];
+          let localEnt = game.getEntity(localId);
+          if (localEnt) {
+            // update the local ent
+            localEnt.position = entityData.position;
+            localEnt.rotation = entityData.rotation;
+            localEnt.velocity = entityData.velocity;
+            localEnt.position.x += 10;
+            localEnt.position.y += 10;
+
+            let windowWidth = window.innerWidth;
+            let windowHeight = window.innerHeight;
+            localEnt.position.z = 1;
+        
+            let windowMeta = crosswindow.getWindowMetadata(source);
+            console.log('wwww', windowHeight.position)
+            // TODO: apply proper zoom and offset based on current and target window position diff and zoom
+            //localEnt.position.x = localEnt.position.x + entityData.screenPosition.x / game.data.camera.currentZoom - windowMeta.position.x;
+            //localEnt.position.y = localEnt.position.y + entityData.screenPosition.y / game.data.camera.currentZoom - windowMeta.position.y;
+
+            //localEnt.screenPosition = entityData.screenPosition;
+            console.log('updating local ent', localEnt.id, localEnt);
+            game.updateEntity(localEnt.id, localEnt);
+          }
+        }
+
+      });
+
+      // listen to the Mantra event for when entity leaves the viewport
+      game.on('entity::exited::viewport', function (entity) {
+        let entityData = {
+          type: entity.type,
+          position: entity.position,
+          rotation: entity.rotation,
+          velocity: entity.velocity,
+          rotation: entity.rotation,
+          screenPosition: entity.screenPosition
+        };
+
+        console.log('entityData', entityData);
+
+        let bestWindow = crosswindow.getBestWindow(entityData);
+        console.log('found bestWinow', bestWindow)
+        if (bestWindow) {
+          bestWindow.postMessage(entityData);
+          console.log('Message sent to best window:', entityData, bestWindow);
+        }
+
+        game.removeEntity(entity.id);
+      });
+
+
+      // Plugins at runtime
+      game.use('Bullet'); // plugins at runtime
+      game.start(function () {
+
+        // Boomerang action should be left click for demo
+        game.config.mouseActionButton = 'LEFT';
+        game.config.mouseMovementButton = 'RIGHT';
+        //game.reset();
+
+        game.setBackground('#000000');
+        game.make().Player().createEntity();
+
+        for (let i = 0; i < 10; i++) {
+          let randomRadial = game.radialSpread(0, 0, 100, 10, i);
+          game.make().Key({
+            position: randomRadial
+          }).body(true).createEntity();
+        }
+
+      });
+    });
+
+  </script>
+</body>
+
+</html>

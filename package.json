@@ -1,0 +1,42 @@
+{
+  "name": "crosswindow",
+  "version": "1.0.0",
+  "description": "A JavaScript library for cross-window communication and positioning.",
+  "main": "./lib/CrossWindow.js",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yantra-core/CrossWindow.js.git"
+  },
+  "scripts": {
+    "test": "tap --coverage-report=lcov --allow-incomplete-coverage test/",
+    "cover": "tap --coverage-report=html test/"
+  },
+  "keywords": [
+    "cross-window",
+    "communication",
+    "positioning",
+    "messaging",
+    "game development"
+  ],
+  "author": "Yantra Works",
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/yantra-core/CrossWindow.js/issues"
+  },
+  "homepage": "https://github.com/yantra-core/CrossWindow.js#readme",
+  "devDependencies": {
+    "@babel/preset-env": "^7.23.6",
+    "babelify": "^10.0.0",
+    "browserify": "^17.0.0",
+    "tap": "^18.6.1",
+    "tape": "^5.7.4",
+    "uglify-js": "^3.17.4"
+  },
+  "directories": {
+    "example": "examples",
+    "lib": "lib",
+    "test": "test"
+  }
+}
+  
