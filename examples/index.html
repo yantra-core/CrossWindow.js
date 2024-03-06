@@ -495,7 +495,7 @@
           screenPosition: entity.screenPosition
         };
 
-        // console.log('entityData', entityData);
+        console.log('entity::exited::viewport', entityData);
 
         let bestWindow = crosswindow.getBestWindow(entityData);
         // console.log('found bestWindow', bestWindow, crosswindow.windowId);
@@ -506,17 +506,20 @@
           if (bestWindow.windowId === crosswindow.windowId) {
             // if the best window is the current window, then we don't need to send a message
             // we can just remove the entity
-            // console.log("game.setPosition", bestWindow, entityData.position)
+            console.log("game.setPosition", bestWindow, entityData.position)
             game.setPosition(entity.id, bestWindow.entryPosition);
             //game.removeEntity(entity.id);
             return;
           } else {
+            console.log('removing', entity.id)
+            game.removeEntity(entity.id);
             bestWindow.postMessage(entityData);
             //console.log('Message sent to best window:', entityData, bestWindow);
-            game.removeEntity(entity.id);
 
           }
 
+        } else {
+          console.log('no bestWindow', bestWindow)
         }
 
         // console.log('bestWindow', bestWindow)
