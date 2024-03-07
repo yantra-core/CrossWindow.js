@@ -76,7 +76,6 @@
       padding: 0.5em;
       font-size: 1em;
     }
-
   </style>
 </head>
 
@@ -100,7 +99,7 @@
       if (isTouchDevice()) {
         alert('Please note CrossWindow multi-window demo is not optimized for touch devices.');
       }
-      
+
       // when click helpLabel toggle background visibility
       document.querySelector('.helpLabel').addEventListener('click', function () {
         let main = document.querySelector('.main');
@@ -173,6 +172,56 @@
         //
         // TODO: we'll move most of this logic into a Mantra CrossWindow plugin
         // Remark: There is common code pattern here to our server-side spatial zones and IPC zones
+        if (action === 'keydown') {
+
+          if (data.sourceWindowId === crosswindow.windowId) {
+            // don't process own inputs
+            return;
+          }
+
+          // dispatch the event locally
+          let keydownMessage = data.keydownMessage;
+          let event = new KeyboardEvent(keydownMessage.type, {
+            //key: keydownMessage.key,
+            code: keydownMessage.code,
+            sourceWindowId: crosswindow.windowId,
+            //keyCode: keydownMessage.keyCode,
+            //repeat: keydownMessage.repeat,
+            //shiftKey: keydownMessage.shiftKey,
+            //ctrlKey: keydownMessage.ctrlKey,
+            //altKey: keydownMessage.altKey,
+            //metaKey: keydownMessage.metaKey
+          });
+          document.dispatchEvent(event);
+
+          return;
+        }
+
+        if (action === 'keyup') {
+          if (data.sourceWindowId === crosswindow.windowId) {
+            // don't process own inputs
+            return;
+          }
+
+          // dispatch the event locally
+          let keyupMessage = data.keyupMessage;
+          let event = new KeyboardEvent(keyupMessage.type, {
+            //key: keyupMessage.key,
+            code: keyupMessage.code,
+            sourceWindowId: crosswindow.windowId,
+            //keyCode: keyupMessage.keyCode,
+            //repeat: keyupMessage.repeat,
+            //shiftKey: keyupMessage.shiftKey,
+            //ctrlKey: keyupMessage.ctrlKey,
+            //altKey: keyupMessage.altKey,
+            //metaKey: keyupMessage.metaKey
+          });
+          document.dispatchEvent(event);
+
+          return;
+        }
+
+
         if (action === 'inputs') {
           // don't process own inputs
           // check to see if current window has focus, if so return
@@ -395,31 +444,78 @@
       // listens for local game keyboard events and broadcasts them too all crosswindows
       // this may not be needed if we assumed that window.focus() was always working
       // and that user didn't click on wrong window by accident
-      game.on('keyboard::handleInputs', (data) => {
 
-        if (!document.hasFocus()) {
-          return;
-
-        }
-
-        if (data && data.controls) {
-          // let currentInputs = data.controls; // TODO: gamepad merge scope
-          let currentInputs = data.controls || {};
-          if (Object.keys(currentInputs).length) {
-            // console.log('keyboard::handleInputs', data)
-            if (crosswindow && crosswindow.postMessage) {
-              crosswindow.postMessage('any', {
-                action: 'inputs',
-                //entityId: entityId,
-                controls: data.controls,
-                //sequenceNumber: sequenceNumber
-              });
-            }
-
-          }
-
-        }
+      // add keydown event to document
+      // this will capture all keypresses
+      window.document.addEventListener('keydown', function (event) {
+        handleKeydown(event);
       });
+
+      // add keyup event to document
+      // this will capture all keypresses 
+      window.document.addEventListener('keyup', function (event) {
+        handleKeyup(event);
+      });
+
+
+      function handleKeydown(event) {
+        // console.log('keydown', event);
+
+        if (event.bubbles === false) {
+          return;
+        }
+
+        // first lets serialize the event as best we can, just pick the important properties
+        let jsonkeydownMessage = {
+          key: event.key,
+          code: event.code,
+          keyCode: event.keyCode,
+          repeat: event.repeat,
+          type: event.type,
+          shiftKey: event.shiftKey,
+          ctrlKey: event.ctrlKey,
+          altKey: event.altKey,
+          metaKey: event.metaKey
+        };
+
+
+        // console.log(jsonkeydownMessage)
+
+        // send keypress to all targets
+        crosswindow.postMessage('any', {
+          action: 'keydown',
+          keydownMessage: jsonkeydownMessage
+        });
+
+      }
+
+      function handleKeyup(event) {
+
+        if (event.bubbles === false) {
+          return;
+        }
+
+        // console.log('keyup', event);
+        // first lets serialize the event as best we can, just pick the important properties
+        let jsonKeyupMessage = {
+          key: event.key,
+          code: event.code,
+          keyCode: event.keyCode,
+          repeat: event.repeat,
+          type: event.type,
+          shiftKey: event.shiftKey,
+          ctrlKey: event.ctrlKey,
+          altKey: event.altKey,
+          metaKey: event.metaKey
+        };
+
+        // send keypress to all targets
+        crosswindow.postMessage('any', {
+          action: 'keyup',
+          keyupMessage: jsonKeyupMessage
+        });
+
+      }
 
       //
       // Listen to the Mantra event for when entity leaves the viewport
@@ -546,9 +642,11 @@
           if (savedPlayer) {
             target = savedPlayer;
           }
+          /*
           game.make().Hexapod({
             target: savedPlayer
           }).repeat(6).createEntity();
+          */
         }
 
       });
@@ -656,16 +754,16 @@
       <div class="switchExample">
         <a href="https://yantra.gg/crosswindow/simple">Switch to Simple Example</a>
       </div>
-  
+
     </div>
     <div class="help">
-  
+
       <h3>
-        
+
         <label class="helpLabel" for="hideHelp" title="Hides helper text">Help
           <input type="checkbox" id="hideHelp" checked />
-        </label> 
-  
+        </label>
+
       </h3>
       <p>Click the top-right button to open a new CrossWindow<br />
         Each new CrossWindow will have its own Mantra.js game instance<br />
