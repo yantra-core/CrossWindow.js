@@ -10,51 +10,10 @@
   <meta name="description" content="A JavaScript procedural generator for Mazes, Terrains, and Biomes">
   <script src="./mantra.js"></script>
   <script src="./crosswindow.js"></script>
-
+  <script src="./crosswindow.debugger.js"></script>
 
   <style>
-    .debug-window-box {
-      border: 2px solid white;
-      background-color: rgba(0, 0, 0, 0.5);
-      /* Slightly darker background for better contrast */
-      color: white;
-      font-size: 1rem;
-      /* Responsive font size */
-      position: absolute;
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: 0.5em;
-      /* Consistent padding */
-      border-radius: 8px;
-      /* Rounded corners */
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-      /* Subtle shadow */
-      z-index: 11111;
-      transition: transform 0.2s;
-      /* Smooth transition for hover effect */
-    }
 
-    .debug-window-box:hover {}
-
-    .position-info {
-      margin-top: 0.5em;
-      text-align: left;
-    }
-
-    #windowsContainer {
-      z-index: 22222;
-      position: absolute;
-      background: transparent;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      /* Ignore pointer events */
-    }
 
     .main {
       position: relative;
@@ -96,16 +55,7 @@
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
     }
 
-    /* at bottom right of screen */
-    #crossWindowCount {
-      position: absolute;
-      bottom: 10px;
-      left: 10px;
-      z-index: 9999;
-      padding: 0.5em;
-      background-color: white;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-    }
+
 
     @media (max-width: 600px) {
       button {
@@ -121,10 +71,10 @@
 
   <div id="openWindowButtons">
     <button>Open Window</button>
-
   </div>
   <script>
     let crosswindow = new CW.CrossWindow();
+    let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow);
 
     document.querySelectorAll('#openWindowButtons button').forEach(button => {
       button.addEventListener('click', function () {
@@ -136,7 +86,7 @@
         let buffer = 10; // Define a buffer distance for the new window
         let top = offsetY, left = offsetX;
 
-        console.log('top', top, 'left', left);
+        //console.log('top', top, 'left', left);
 
         // Open new window with calculated top and left positions
         crosswindow.open('index.html?win', {
@@ -161,46 +111,6 @@
       game.config.entityEmitsViewportExitEvent = true;
 
       let remoteEntMap = {};
-
-      // TODO: create simple HTML + CSS boxes that track the position of the remote windows
-      // relative to the current window
-      // we should update or create the boxes on windowChanged event
-      // we will have access to currentWindowMetadata
-      /*
-        currentWindowMetadata.windowId
-        currentWindowMetadata.metadata
-        currentWindowMetadata.metadata.position
-        currentWindowMetadata.metadata.size
-
-      */
-
-      crosswindow.on('windowClosed', function (currentWindowMetadata) {
-        // remove the window preview if exists
-        let windowBox = document.getElementById('windowBox_' + currentWindowMetadata.windowId);
-        if (windowBox) {
-          windowBox.remove();
-        }
-      });
-
-      // TODO: move this debugger window code into library
-      crosswindow.on('windowChanged', function (currentWindowMetadata) {
-        // console.log('windowChanged', currentWindowMetadata);
-        // update the crossWindowCount
-        // get the el
-        let currentWindows = crosswindow.getCurrentWindows();
-        // console.log('currentWindows', currentWindows)
-        if (currentWindows) {
-          crossWindowCountValue.innerText = Object.keys(currentWindows).length;
-        }
-        if (currentWindowMetadata.windowId === crosswindow.windowId) {
-          // do not create a box for the current window
-          // return;
-        }
-        // Built-in Debugger
-        crosswindow.updateOrCreateDebugContainer(currentWindowMetadata);
-      });
-
-      crosswindow.pollWindows();
 
       crosswindow.on('message', function (event) {
         let data = event.data || event.payload; // fix this
@@ -252,8 +162,9 @@
         //console.log("the source", source)
 
         let entityData = data;
-        // TODO: make sure to GC this later on ent removal
-        if (typeof remoteEntMap[source][entityData.id] === 'undefined') {
+        // Remark: The other conditional case is for intersecting and overlapping ents
+        // that would exist in both windows at once ( with one being hidden behind the other )
+        if (true || typeof remoteEntMap[source][entityData.id] === 'undefined') {
           // this local node has never seen this ent from the remote node
           // so we need to create it
           // focus this window
@@ -271,6 +182,19 @@
           builder.health(entityData.health);
           builder.velocity(entityData.velocity.x, entityData.velocity.y);
           builder.rotation(entityData.rotation);
+          
+          // Remark: Here is a special case where we need to send the full
+          // item over the cross window instead of ent reference
+          // since the relational data is from another mantra instance ( and no longer valid )
+          // re-inflate all the items manually
+          let itemIds = [];
+          entityData.items.forEach(function(ent){
+            ent.owner = game.currentPlayerId
+            let id = game.createEntity(ent);
+            itemIds.push(id);
+          });
+          builder.items(itemIds);
+          
           builder.x(position.x).y(position.y);
           builder.z(1); // for now
           // console.log('creating local ent', builder.config);
@@ -285,7 +209,7 @@
 
             // see if there is a current player on mantra
             let currentPlayer = game.getEntity(game.currentPlayerId);
-            console.log('CCCCC', currentPlayer)
+            // console.log('CCCCC', currentPlayer)
 
 
 
@@ -309,13 +233,9 @@
 
               }
 
-
-
-
-
           }
 
-          console.log("CREATING ENT", builder.config)
+          //console.log("CREATING ENT", builder.config)
 
           let ent = builder.createEntity();
           if (ent.type === "PLAYER") {
@@ -324,7 +244,7 @@
               x: ent.position.x + window.screenX,
               y: ent.position.y + window.screenY
             };
-            console.log('saving global', globalPosition);
+            //console.log('saving global', globalPosition);
             localStorage.setItem('mantra-currentPlayer', JSON.stringify(globalPosition));
 
             // update target
@@ -333,9 +253,6 @@
             }
 
           }
-
-
-
 
           remoteEntMap[source][entityData.id] = ent.id; // now we have a mapping of remoteId to localId
           //console.log('stored ref', ent.id, remoteEntMap[source][entityData.id])
@@ -347,6 +264,7 @@
           let localEnt = game.getEntity(localId);
           if (localEnt) {
             // update the local ent
+            localEnt.type = entityData.type;
             localEnt.position = entityData.position;
             localEnt.rotation = entityData.rotation;
             localEnt.velocity = entityData.velocity;
@@ -354,6 +272,7 @@
             localEnt.position.x += 10;
             localEnt.position.y += 10;
             localEnt.meta = entityData.meta || {};
+            localEnt.items = entityData.items || [];
 
             let windowWidth = window.innerWidth;
             let windowHeight = window.innerHeight;
@@ -422,6 +341,24 @@
 
       // listen to the Mantra event for when entity leaves the viewport
       game.on('entity::exited::viewport', function (entity) {
+        let actualItems = [];
+        if (entity.items) {
+          entity.items.forEach(item => {
+          let ent = game.getEntity(item);
+          console.log('exit item ent', ent)
+          if (ent) {
+            actualItems.push({
+            position: ent.position,
+            size: ent.size,
+            type: ent.type,
+            collectable: ent.collectable
+          });
+          }
+        });
+
+        }
+
+        console.log('sending out actual items', actualItems)
         let entityData = {
           id: entity.id,
           type: entity.type,
@@ -431,6 +368,7 @@
           velocity: entity.velocity,
           rotation: entity.rotation,
           meta: entity.meta,
+          items: actualItems,
           screenPosition: entity.screenPosition
         };
 
@@ -466,8 +404,10 @@
       });
 
 
-      // Plugins at runtime
       game.use('Bullet'); // plugins at runtime
+      // TODO: have boomerang work cross window ( needs dynamic target tracker like Hexapod )
+      // game.use('Boomerang'); // plugins at runtime
+
       game.start(function () {
 
         // game.make().Block().Draggable().color('blue').size(32).createEntity();
@@ -487,8 +427,8 @@
           let currentPlayer = game.make().Player().createEntity();
           // set currentPlayer in localStorage so Hexapods can track it cross window
           let globalPosition = {
-            x: currentPlayer.position.x + window.screenX,
-            y: currentPlayer.position.y + window.screenY
+            x: currentPlayer.position.x - window.screenX,
+            y: currentPlayer.position.y - window.screenY
           };
           console.log('saving global', globalPosition);
           localStorage.setItem('mantra-currentPlayer', JSON.stringify(globalPosition));
@@ -496,55 +436,45 @@
           if (game.systems.hexapod) {
             game.systems.hexapod.setTarget(globalPosition);
           }
+          /*
+          for (let i = 0; i < 1; i++) {
+          let randomRadial = game.radialSpread(0, 0, 100, 1, i);
+            setTimeout(function(){
+              game.make().Key({
+              position: randomRadial
+            }).body(true).createEntity();
+          }, 30000)
+                  }
+
+          */
 
         } else {
 
+          let savedPlayer = JSON.parse(localStorage.getItem('mantra-currentPlayer'));
+
+          // alert(localStorage.getItem('mantra-currentPlayer'));
+
+          let target = null;
+          if (savedPlayer) {
+            target = savedPlayer;
+          }
           game.make().Hexapod({
-            target: JSON.parse(localStorage.getItem('mantra-currentPlayer'))
+            target: savedPlayer
           }).repeat(6).createEntity();
         }
 
-        // alert(Object.keys(currentWindows).length)
-        if (Object.keys(currentWindows).length <= 1) {
-        } else {
-          //game.make().Tower().color('red').angle(270).position(-32, 0).createEntity();
-          //game.make().Tower().color('orange').angle(0).position(0, -32).createEntity();
-
-          //game.make().Tower().color('yellow').angle(180).position(0, 32).createEntity();
-          //game.make().Tower().color('purple').angle(90).position(32, 0).createEntity();
-
-
-        }
-
-        /*
-        for (let i = 0; i < 10; i++) {
-          let randomRadial = game.radialSpread(0, 0, 100, 10, i);
-          game.make().Key({
-            position: randomRadial
-          }).body(true).createEntity();
-        }
-        */
-
       });
+
+
     });
 
 
     function handleIntersection(event) {
       console.log('intersecting', event);
-      /*
-game.flashMessage({
-message: JSON.stringify(data.payload, true, 2),
-duration: 5000,
-type: 'info'
-});
-*/
 
       let source = event.sourceWindowId;
       let target = event.targetWindowId;
       let area = event.intersectionArea;
-      // game.flashMessage(JSON.stringify(area));
-      //console.log('intersection')
-      //console.log('area.position', area.position);
 
       let windowWidth = window.innerWidth;
       let windowHeight = window.innerHeight;
@@ -560,17 +490,6 @@ type: 'info'
         height: area.size.height / game.data.camera.currentZoom
       };
 
-      // needs to be uncommecnt when camera not 0,0 ( moved )
-      // we can ignore the camera position for now ( testing )
-      //worldPosition.x = worldPosition.x + game.data.camera.position.x;
-      //worldPosition.y = worldPosition.y + game.data.camera.position.y;
-
-      //console.log('area.size', area.size);
-      //console.log('worldPosition', worldPosition);
-      //console.log('worldArea', worldArea);
-
-      // area.position
-      // area.size
       if (game.systems.rbush) {
         // Directly use the calculated worldPosition and worldArea for the query
         var query = {
@@ -605,6 +524,7 @@ type: 'info'
               velocity: entity.velocity,
               rotation: entity.rotation,
               body: true,
+              items: entity.items,
               screenPosition: entity.screenPosition
             };
 
@@ -630,9 +550,6 @@ type: 'info'
 
 
   </script>
-  <!-- Container where remote window boxes will be displayed -->
-  <div id="windowsContainer" style="position: absolute;"></div>
-  <div id="crossWindowCount">CrossWindows: <span id="crossWindowCountValue">0</span></div>
 
 </body>
 

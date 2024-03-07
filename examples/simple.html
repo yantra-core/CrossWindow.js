@@ -9,6 +9,7 @@
   <script src="https://yantra.gg/labyrinthos/browser/vendor/jquery.min.js"></script>
   <meta name="description" content="A JavaScript procedural generator for Mazes, Terrains, and Biomes">
   <script src="./crosswindow.js"></script>
+  <script src="./crosswindow.debugger.js"></script>
 
 
   <style>
@@ -124,77 +125,35 @@
 </head>
 
 <body>
-  <div id="directionButtons">
-
-    <button data-direction="NW">↖ NW</button>
-    <button data-direction="N">↑ N</button>
-    <button data-direction="NE">↗ NE</button>
-    <button data-direction="E">→ E</button>
-    <button data-direction="SE">↘ SE</button>
-    <button data-direction="S">↓ S</button>
-    <button data-direction="SW">↙ SW</button>
-    <button data-direction="W">← W</button>
+  <div id="openWindowButtons">
+    <button>Open Window</button>
   </div>
   <script>
     let crosswindow = new CW.CrossWindow();
+    let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow);
 
-    document.querySelectorAll('#directionButtons button').forEach(button => {
+  
+    document.querySelectorAll('#openWindowButtons button').forEach(button => {
       button.addEventListener('click', function () {
         const direction = this.getAttribute('data-direction');
         const windowWidth = window.innerWidth;
-        const windowHeight = window.innerHeight;
+        const windowHeight = window.outerHeight - 75;
         const offsetX = window.screenX; // Current window's distance from the left edge of the screen
         const offsetY = window.screenY; // Current window's distance from the top edge of the screen
         let buffer = 10; // Define a buffer distance for the new window
         let top = offsetY, left = offsetX;
 
-        switch (direction) {
-          case 'N':  // WORKING
-            top = offsetY - windowHeight - buffer;
-            left = offsetX - windowWidth;
-            break;
-          case 'NE': // WORKING
-            top = offsetY - windowHeight - buffer;
-            left = offsetX;
-            break;
-          case 'E': // WORKING
-            top = offsetY;
-            left = offsetX + buffer + windowWidth / 2; // Align E window with the right edge of the current window
-            break;
-          case 'SE':
-            top = offsetY + windowHeight + buffer;
-            left = offsetX; // Align SE window with the E edge of the current window
-            break;
-          case 'S': // WORKING
-            top = offsetY + windowHeight + buffer;
-            left = offsetX - windowWidth; // Align S window with the bottom edge, offset to the left
-            break;
-          case 'SW':
-            top = offsetY + windowHeight + buffer;
-            left = offsetX - windowWidth * 2 - buffer; // Align SW window to the left of the S window
-            break;
-          case 'W': // WORKING
-            top = offsetY;
-            left = offsetX - buffer - windowWidth; // Align E window with the right edge of the current window
-            break;
-          case 'NW':
-            top = offsetY - windowHeight - buffer;
-            left = offsetX - windowWidth * 2 - buffer; // Align NW window above and to the left, similar to W and N
-            break;
-        }
-
-        console.log('top', top, 'left', left);
+        //console.log('top', top, 'left', left);
 
         // Open new window with calculated top and left positions
-        crosswindow.open('simple.html?win', {
+        crosswindow.open('simple.html', {
           width: windowWidth,
           height: windowHeight,
-          top: top,
-          left: left,
+          top: top /*- window.outerHeight*/,
+          left: left + window.outerWidth,
         }, true);
       });
     });
-
 
     document.addEventListener('DOMContentLoaded', (event) => {
 
@@ -246,8 +205,6 @@
 
 
   </script>
-  <!-- Container where remote window boxes will be displayed -->
-  <div id="windowsContainer" style="position: absolute;"></div>
 
 </body>
 
