@@ -58,17 +58,16 @@ This more featured demo contains a Mantra.js game instance, a Player with arrows
 | crosswindow.min.js| [Link](https://yantra.gg/crosswindow.min.js)    | 22kb      |
 
 **NPM**
+
 ```bash
 npm install crosswindow
 ```
 
+**Browser**
+
 ```html
 <a name="install"></a>
 ```
-
-**Browser**
-
-<script >..
 
 
 # How
