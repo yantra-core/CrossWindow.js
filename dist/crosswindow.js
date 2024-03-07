@@ -81,6 +81,13 @@ var CommunicationManager = exports["default"] = /*#__PURE__*/function () {
   }, {
     key: "sendMessage",
     value: function sendMessage(targetWindowId, message) {
+      if (targetWindowId === this.windowId) {
+        this.cw.emit('message', {
+          sourceWindowId: this.windowId,
+          payload: message
+        });
+        return;
+      }
       this.channel.postMessage({
         action: 'sendMessage',
         targetWindowId: targetWindowId,
@@ -342,7 +349,6 @@ var MetadataManager = exports["default"] = /*#__PURE__*/function () {
           if (windowId === _this3.windowId) return; // Skip the current window
           if (!allWindows.hasOwnProperty(windowId)) {
             // If a window in prevMetadata is not present in allWindows, it's been closed
-            console.log('gone', windowId, prevMetadata[windowId]);
             _this3.emit('windowClosed', {
               windowId: windowId,
               metadata: prevMetadata[windowId]
@@ -355,19 +361,27 @@ var MetadataManager = exports["default"] = /*#__PURE__*/function () {
           var currentWindowMetadata = allWindows[windowId];
           var prevWindowMetadata = prevMetadata[windowId];
 
-          // Check if the window is new or its metadata has changed
-          //if (!prevWindowMetadata || this.hasMetadataChanged(prevWindowMetadata, currentWindowMetadata)) {
-          // Update the previous metadata state for the next iteration
+          // Check if the window is new
+          if (!prevWindowMetadata) {
+            // Emit an event for the new window
+            _this3.emit('windowOpened', {
+              windowId: windowId,
+              metadata: currentWindowMetadata
+            });
+          }
+
+          // Check if the window's metadata has changed
+          if (prevWindowMetadata && _this3.hasMetadataChanged(prevWindowMetadata, currentWindowMetadata)) {
+            // Emit an event for the changed window
+            _this3.emit('windowChanged', {
+              windowId: windowId,
+              metadata: currentWindowMetadata
+            });
+          }
+
+          // Update the previous metadata state and current windows state for the next iteration
           prevMetadata[windowId] = currentWindowMetadata;
           _this3.currentWindows[windowId] = currentWindowMetadata;
-          // Emit an event for the changed or new window
-          // TODO: without the conditional statement this is now 'windowHeartbeat'
-          // we should split the case and have two events to subscribe to
-          _this3.emit('windowChanged', {
-            windowId: windowId,
-            metadata: currentWindowMetadata
-          });
-          // }
         });
 
         // Update prevMetadata to reflect the current state for the next iteration
@@ -388,8 +402,8 @@ var MetadataManager = exports["default"] = /*#__PURE__*/function () {
           y: window.screenY
         },
         size: {
-          width: window.innerWidth,
-          height: window.innerHeight
+          width: window.outerWidth,
+          height: window.outerHeight
         }
       };
     }
@@ -416,7 +430,7 @@ var MetadataManager = exports["default"] = /*#__PURE__*/function () {
           windowId = _ref2[0],
           metadata = _ref2[1];
         if (currentTime - metadata.lastActive > timeout) {
-          console.log('removeInactiveWindows', windowId, metadata, currentTime, timeout);
+          // console.log('removeInactiveWindows', windowId, metadata, currentTime, timeout)
           delete allWindowsMetadata[windowId];
           _this4.currentWindows[windowId] = null;
         }
@@ -486,7 +500,7 @@ function calculateEntryPosition(direction, position, bestWindowId) {
   //console.log('bestWindowSize', bestWindowSize)
 
   // Adjust this buffer size as needed
-  var buffer = 16; // any small values should work, without buffer the entity may get stuck in teleportation loop
+  var buffer = 100; // any small values should work, without buffer the entity may get stuck in teleportation loop
   // console.log('calculateEntryPosition', direction, position)
 
   switch (direction) {
@@ -592,6 +606,32 @@ function getBestWindow(entityData) {
   }
   if (!bestWindowId) {
     bestWindowId = this.windowId;
+  }
+
+  // TODO: we can refactor this code to take up less space, incorporate with above loop
+  if (bestWindowId === this.windowId && Object.keys(allWindowsMetadata).length > 1) {
+    // If the best window is the current window and there are other windows available,
+    // pick the first other window as the best window. This is a basic fallback.
+
+    // Remove the current window from consideration
+    delete allWindowsMetadata[this.windowId];
+
+    // Reset minEdgeDistance for the new comparison
+    minEdgeDistance = Infinity;
+
+    // Iterate through the remaining windows to find the closest one
+    Object.entries(allWindowsMetadata).forEach(function (_ref3) {
+      var _ref4 = _slicedToArray(_ref3, 2),
+        windowId = _ref4[0],
+        metadata = _ref4[1];
+      var edgeDistance = calculateEdgeDistance(direction, metadata.position, metadata.size, currentWindowPosition, currentWindowSize);
+
+      // Update bestWindowId if a closer window is found
+      if (edgeDistance < minEdgeDistance) {
+        minEdgeDistance = edgeDistance;
+        bestWindowId = windowId;
+      }
+    });
   }
   return prepareBestWindowResponse(this, bestWindowId, direction, entityData);
 }

@@ -36,6 +36,18 @@ var CrossWindowDebugger = exports["default"] = /*#__PURE__*/function () {
   function CrossWindowDebugger(crossWindowInstance) {
     var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
     _classCallCheck(this, CrossWindowDebugger);
+    this.showOtherWindows = true;
+    this.showWindowLegend = true;
+    this.showPositionLegend = true;
+    if (typeof options.showOtherWindows === 'boolean') {
+      this.showOtherWindows = options.showOtherWindows;
+    }
+    if (typeof options.showWindowLegend === 'boolean') {
+      this.showWindowLegend = options.showWindowLegend;
+    }
+    if (typeof options.showPositionLegend === 'boolean') {
+      this.showPositionLegend = options.showPositionLegend;
+    }
     this.initUI();
     this.updateUI();
     this.crossWindowInstance = crossWindowInstance;
@@ -77,7 +89,9 @@ var CrossWindowDebugger = exports["default"] = /*#__PURE__*/function () {
       });
       document.body.appendChild(windowsContainer);
 
-      // Create and style crossWindowCount
+      //
+      // Cross Window Count
+      //
       var crossWindowCount = document.createElement('div');
       crossWindowCount.id = 'crossWindowCount';
       crossWindowCount.innerHTML = 'CrossWindows: <span id="crossWindowCountValue">0</span>';
@@ -92,43 +106,52 @@ var CrossWindowDebugger = exports["default"] = /*#__PURE__*/function () {
         zIndex: '9999'
       });
       document.body.appendChild(crossWindowCount);
+      if (this.showWindowLegend) {
+        // Create and style currentCrossWindow
+        var currentCrossWindow = document.createElement('div');
+        currentCrossWindow.id = 'currentCrossWindow';
 
-      // Create and style currentCrossWindow
-      var currentCrossWindow = document.createElement('div');
-      currentCrossWindow.id = 'currentCrossWindow';
-      var crossWindowIdSpan = document.createElement('div');
-      crossWindowIdSpan.id = 'crossWindowId';
-      crossWindowIdSpan.style.backgroundColor = '#fff';
-      crossWindowIdSpan.style.height = '20px';
-      crossWindowIdSpan.style.fontWeight = 'bold';
-      crossWindowIdSpan.style.width = '100%';
-      crossWindowIdSpan.style.color = 'black';
-      crossWindowIdSpan.style.padding = '5px';
-      crossWindowIdSpan.fontSize = '1.5em';
-      currentCrossWindow.appendChild(crossWindowIdSpan);
-      var crossWindowPositionSpan = document.createElement('div');
-      crossWindowPositionSpan.id = 'crossWindowPosition';
-      crossWindowPositionSpan.style.backgroundColor = '#fff';
-      crossWindowPositionSpan.style.height = '20px';
-      crossWindowPositionSpan.style.fontWeight = 'normal';
-      crossWindowPositionSpan.style.width = '100%';
-      crossWindowPositionSpan.style.color = 'black';
-      crossWindowPositionSpan.style.padding = '5px';
-      crossWindowPositionSpan.fontSize = '1em';
-      currentCrossWindow.appendChild(crossWindowPositionSpan);
+        //
+        // Current Cross Window Legend
+        //
+        var crossWindowIdSpan = document.createElement('div');
+        crossWindowIdSpan.id = 'crossWindowId';
+        crossWindowIdSpan.style.backgroundColor = '#fff';
+        crossWindowIdSpan.style.height = '20px';
+        crossWindowIdSpan.style.fontWeight = 'bold';
+        crossWindowIdSpan.style.width = '100%';
+        crossWindowIdSpan.style.color = 'black';
+        crossWindowIdSpan.style.padding = '5px';
+        crossWindowIdSpan.fontSize = '1.5em';
+        currentCrossWindow.appendChild(crossWindowIdSpan);
 
-      //currentCrossWindow.innerHTML = `<span id="crossWindowId">0</span><br/><span id="crossWindowPosition">0,0</span>`;
-      Object.assign(currentCrossWindow.style, {
-        position: 'absolute',
-        bottom: '60px',
-        left: '10px',
-        padding: '0.5em',
-        fontWeight: 'bold',
-        backgroundColor: 'white',
-        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
-        zIndex: '9999'
-      });
-      document.body.appendChild(currentCrossWindow);
+        //
+        // Currnent Cross Window Position Legend
+        //
+        var crossWindowPositionSpan = document.createElement('div');
+        crossWindowPositionSpan.id = 'crossWindowPosition';
+        crossWindowPositionSpan.style.backgroundColor = '#fff';
+        crossWindowPositionSpan.style.height = '20px';
+        crossWindowPositionSpan.style.fontWeight = 'normal';
+        crossWindowPositionSpan.style.width = '100%';
+        crossWindowPositionSpan.style.color = 'black';
+        crossWindowPositionSpan.style.padding = '5px';
+        crossWindowPositionSpan.fontSize = '1em';
+        currentCrossWindow.appendChild(crossWindowPositionSpan);
+
+        //currentCrossWindow.innerHTML = `<span id="crossWindowId">0</span><br/><span id="crossWindowPosition">0,0</span>`;
+        Object.assign(currentCrossWindow.style, {
+          position: 'absolute',
+          bottom: '60px',
+          left: '10px',
+          padding: '0.5em',
+          fontWeight: 'bold',
+          backgroundColor: 'white',
+          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
+          zIndex: '9999'
+        });
+        document.body.appendChild(currentCrossWindow);
+      }
     }
   }, {
     key: "updateUI",
@@ -136,14 +159,24 @@ var CrossWindowDebugger = exports["default"] = /*#__PURE__*/function () {
       var _this = this;
       setInterval(function () {
         var currentWindows = _this.crossWindowInstance.getCurrentWindows();
-        document.getElementById('crossWindowCountValue').innerText = Object.keys(currentWindows).length;
-        document.getElementById('crossWindowId').innerText = _this.crossWindowInstance.windowId.split('-')[1];
-        document.getElementById('crossWindowPosition').innerText = "x: ".concat(window.screenX, ", y: ").concat(window.screenY);
-
-        // for each window updateOrCreateDebugContainer
-        for (var windowId in currentWindows) {
-          currentWindows[windowId].windowId = windowId;
-          _this.updateOrCreateDebugContainer(currentWindows[windowId]);
+        var windowCountElement = document.getElementById('crossWindowCountValue');
+        if (windowCountElement) {
+          windowCountElement.innerText = Object.keys(currentWindows).length;
+        }
+        var windowIdElement = document.getElementById('crossWindowId');
+        if (windowIdElement) {
+          windowIdElement.innerText = _this.crossWindowInstance.windowId.split('-')[1];
+        }
+        var windowPositionElement = document.getElementById('crossWindowPosition');
+        if (windowPositionElement) {
+          windowPositionElement.innerText = "x: ".concat(window.screenX, ", y: ").concat(window.screenY);
+        }
+        if (_this.showOtherWindows) {
+          // for each window updateOrCreateDebugContainer
+          for (var windowId in currentWindows) {
+            currentWindows[windowId].windowId = windowId;
+            _this.updateOrCreateDebugContainer(currentWindows[windowId]);
+          }
         }
       }, 300);
     }

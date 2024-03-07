@@ -5,8 +5,7 @@
   <title>CrossWindow.js Demo</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://yantra.gg/labyrinthos/browser/vendor/jquery.min.js"></script>
-  <meta name="description" content="A JavaScript procedural generator for Mazes, Terrains, and Biomes">
+  <meta name="description" content="A Javascript utility library for cross-window communication">
   <script src="./crosswindow.js"></script>
   <script src="./crosswindow.debugger.js"></script>
 
@@ -85,16 +84,12 @@ function isTouchDevice() {
 
       document.querySelectorAll('#openWindowButtons button').forEach(button => {
         button.addEventListener('click', () => {
-
           const windowWidth = window.innerWidth;
           const windowHeight = window.outerHeight - 75;
           const offsetX = window.screenX; // Current window's distance from the left edge of the screen
           const offsetY = window.screenY; // Current window's distance from the top edge of the screen
           let buffer = 10; // Define a buffer distance for the new window
           let top = offsetY, left = offsetX;
-
-
-
           // Open new CrossWindow
           crosswindow.open('simple.html', {
             width: windowWidth,
