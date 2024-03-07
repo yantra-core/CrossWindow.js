@@ -20,7 +20,7 @@ CrossWindow.js is used for building web applications that need to be aware of th
 
 *image here*
 
-**IT CAN TELEPORT OBJECTS BETWEEN BROWSER WINDOWS**
+# IT CAN TELEPORT OBJECTS BETWEEN BROWSER WINDOWS
 
 
 
@@ -49,10 +49,6 @@ This simple demo runs CrossWindows's built-in debugger, showing the positional m
 
 This more featured demo contains a Mantra.js game instance, a Player with arrows, and some NPCS. Try opening a window and shooting some arrows.
 
-```html
-<a name="install"></a>
-```
-
 ## Installation
 
 **CDN Release 1.1.0**
@@ -64,6 +60,10 @@ This more featured demo contains a Mantra.js game instance, a Player with arrows
 **NPM**
 ```bash
 npm install crosswindow
+```
+
+```html
+<a name="install"></a>
 ```
 
 **Browser**
