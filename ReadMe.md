@@ -7,7 +7,6 @@
 
 ![cross-window-mantra-3](https://github.com/yantra-core/CrossWindow.js/assets/70011/d243d930-f098-4b2e-9136-89ea1bbbc000)
 
-
 </h3>
 
 <h4 align="center">
@@ -61,13 +60,6 @@ https://github.com/yantra-core/CrossWindow.js/assets/70011/55946c29-6ec6-4202-a3
 
 ```bash
 npm install crosswindow
-```
-
-**Browser**
-
-```html
-<script src="https://yantra.gg/crosswindow.js"></script>
-<script src="https://yantra.gg/crosswindow.debugger.js"></script>
 ```
 
 ## Usage
@@ -149,7 +141,6 @@ npm install crosswindow
 | crosswindow.debugger.js    | [Link](https://yantra.gg/crosswindow.debugger.js)        | 12kb      |
 | crosswindow.debugger.min.js| [Link](https://yantra.gg/crosswindow.debugger.min.js)    | 6kb      |
 
-
 # How
 
   - Window Discovery and metadata handled by [LocalStorage](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage)
@@ -162,13 +153,13 @@ npm install crosswindow
   - [✅] `getBestWindow(screenPosition)` for calculating "best" window for screen position
   - [✅]  Intersection events for overlapping windows ( WIP needs demo )
 
-### Contributing
+## Contributing
 
-#### TypeScript Definitions
+## TypeScript Definitions
 
 If anyone wishes to add TypeScript defs for the project, please open a PR and we can merge them.
 
-#### Unit Tests
+## Unit Tests
 
 CrossWindow.js is currently short on tests. We'll want to add tests. `tap` or `tape` are great.
 
