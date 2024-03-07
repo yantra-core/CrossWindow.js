@@ -134,8 +134,7 @@
         width: 400,
         height: 300,
         warnNonYantraGameRoot: true,
-        disableContextMenu: false,
-        gameRoot: 'http://192.168.1.80:7777'
+        disableContextMenu: false
       });
 
       game.config.emitKeyboardInputsEvents = true;
@@ -157,99 +156,11 @@
         let data = event.data || event.payload; // fix this
         let action = event.action;
 
-        if (event.payload && event.payload.action) {
+        if (event.payload && event.payload.action) { // TODO: remove this code legacy api
           // TODO: remove this old API
           action = event.payload.action;
           data = event.payload;
         }
-
-        //
-        // Code for capturing and re-broadcasting inputs over broadcast channel
-        // Perhaps we can create a new CommunicationClient in Mantra that handles this?
-        // We shouldn't need to bypass the input system by directly emitting the key events like this
-        // We should be able to utilize the pre-existing input pool in mantra and treat broadcastchannel..
-        // just like it was a remote server without the authorative server part
-        //
-        // TODO: we'll move most of this logic into a Mantra CrossWindow plugin
-        // Remark: There is common code pattern here to our server-side spatial zones and IPC zones
-        if (action === 'keydown') {
-
-          if (data.sourceWindowId === crosswindow.windowId) {
-            // don't process own inputs
-            return;
-          }
-
-          // dispatch the event locally
-          let keydownMessage = data.keydownMessage;
-          let event = new KeyboardEvent(keydownMessage.type, {
-            //key: keydownMessage.key,
-            code: keydownMessage.code,
-            sourceWindowId: crosswindow.windowId,
-            //keyCode: keydownMessage.keyCode,
-            //repeat: keydownMessage.repeat,
-            //shiftKey: keydownMessage.shiftKey,
-            //ctrlKey: keydownMessage.ctrlKey,
-            //altKey: keydownMessage.altKey,
-            //metaKey: keydownMessage.metaKey
-          });
-          document.dispatchEvent(event);
-
-          return;
-        }
-
-        if (action === 'keyup') {
-          if (data.sourceWindowId === crosswindow.windowId) {
-            // don't process own inputs
-            return;
-          }
-
-          // dispatch the event locally
-          let keyupMessage = data.keyupMessage;
-          let event = new KeyboardEvent(keyupMessage.type, {
-            //key: keyupMessage.key,
-            code: keyupMessage.code,
-            sourceWindowId: crosswindow.windowId,
-            //keyCode: keyupMessage.keyCode,
-            //repeat: keyupMessage.repeat,
-            //shiftKey: keyupMessage.shiftKey,
-            //ctrlKey: keyupMessage.ctrlKey,
-            //altKey: keyupMessage.altKey,
-            //metaKey: keyupMessage.metaKey
-          });
-          document.dispatchEvent(event);
-
-          return;
-        }
-
-
-        if (action === 'inputs') {
-          // don't process own inputs
-          // check to see if current window has focus, if so return
-          if (document.hasFocus()) {
-            return;
-          }
-          let controls = data.controls;
-          for (let control in controls) {
-            let value = controls[control];
-            // console.log('control', control, 'value', value);
-            if (value === true) {
-              //game.rules.emit(control);
-              // dispatch a new KeyboardEvent to browser dom
-              // this will trigger the game's keyboard event listener
-              // and the game will handle the input
-              document.dispatchEvent(new KeyboardEvent('keydown', { 'code': 'Key' + control }));
-            } else {
-              //console.log("DOWN")
-              document.dispatchEvent(new KeyboardEvent('keyup', { 'code': 'Key' + control }));
-            }
-          }
-
-          return;
-        }
-        //
-        // Ends code for capturing inputs and rebroadcasting them to Mantra 
-        //
-
 
         //
         // Handles case when windows are intersecting / overlapping
@@ -258,13 +169,20 @@
           handleIntersection(event);
           return;
         }
-        //
-        // End of handling intersecting windows
-        //
-
 
         //
-        // Default action case 'sendMessage' ( needs rename as its app specific, not crossWindow ) 
+        // Handles all user-space / user-defined messages
+        //
+        if (action === 'message') {
+          handleMessage(event);
+        }
+
+      });
+
+      function handleMessage(data) {
+
+        //
+        // Default action case 'message'
         // This will create the ent, TODO: move to Mantra as generic re-inflate from remote node code
 
         //  game.flashMessage(action);
@@ -422,7 +340,8 @@
         // Ends the default create or update entity logic
         //
 
-      });
+
+      }
 
 
       // this will render the current window box *once* immediately on load
@@ -440,82 +359,6 @@
           }
         }
       });
-
-      // listens for local game keyboard events and broadcasts them too all crosswindows
-      // this may not be needed if we assumed that window.focus() was always working
-      // and that user didn't click on wrong window by accident
-
-      // add keydown event to document
-      // this will capture all keypresses
-      window.document.addEventListener('keydown', function (event) {
-        handleKeydown(event);
-      });
-
-      // add keyup event to document
-      // this will capture all keypresses 
-      window.document.addEventListener('keyup', function (event) {
-        handleKeyup(event);
-      });
-
-
-      function handleKeydown(event) {
-        // console.log('keydown', event);
-
-        if (event.bubbles === false) {
-          return;
-        }
-
-        // first lets serialize the event as best we can, just pick the important properties
-        let jsonkeydownMessage = {
-          key: event.key,
-          code: event.code,
-          keyCode: event.keyCode,
-          repeat: event.repeat,
-          type: event.type,
-          shiftKey: event.shiftKey,
-          ctrlKey: event.ctrlKey,
-          altKey: event.altKey,
-          metaKey: event.metaKey
-        };
-
-
-        // console.log(jsonkeydownMessage)
-
-        // send keypress to all targets
-        crosswindow.postMessage('any', {
-          action: 'keydown',
-          keydownMessage: jsonkeydownMessage
-        });
-
-      }
-
-      function handleKeyup(event) {
-
-        if (event.bubbles === false) {
-          return;
-        }
-
-        // console.log('keyup', event);
-        // first lets serialize the event as best we can, just pick the important properties
-        let jsonKeyupMessage = {
-          key: event.key,
-          code: event.code,
-          keyCode: event.keyCode,
-          repeat: event.repeat,
-          type: event.type,
-          shiftKey: event.shiftKey,
-          ctrlKey: event.ctrlKey,
-          altKey: event.altKey,
-          metaKey: event.metaKey
-        };
-
-        // send keypress to all targets
-        crosswindow.postMessage('any', {
-          action: 'keyup',
-          keyupMessage: jsonKeyupMessage
-        });
-
-      }
 
       //
       // Listen to the Mantra event for when entity leaves the viewport
@@ -572,6 +415,7 @@
             // console.log('removing', entity.id)
             game.removeEntity(entity.id);
             // console.log('Message sent to best window:', entityData, bestWindow);
+            entityData.action = 'message';
             bestWindow.postMessage(entityData);
           }
         } else {
@@ -642,11 +486,9 @@
           if (savedPlayer) {
             target = savedPlayer;
           }
-          /*
           game.make().Hexapod({
             target: savedPlayer
           }).repeat(6).createEntity();
-          */
         }
 
       });
@@ -717,8 +559,9 @@
             };
 
             console.log('entityData', entityData);
-
-            crosswindow.sendMessage(source, entityData);
+            entityData.source = source;
+            entityData.action = 'message';
+            crosswindow.sendMessage(entityData);
             console.log('Message sent to parent window:', source, entityData);
             console.log('my current window', crosswindow.windowId);
             console.log("the target was", target)
