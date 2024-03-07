@@ -25,12 +25,15 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports["default"] = void 0;
+var _EventReceiver = _interopRequireDefault(require("./EventReceiver.js"));
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, _toPropertyKey(descriptor.key), descriptor); } }
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); Object.defineProperty(Constructor, "prototype", { writable: false }); return Constructor; }
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : String(i); }
 function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+// handles keyboard and mouse events
 var CommunicationManager = exports["default"] = /*#__PURE__*/function () {
   function CommunicationManager(channel, cw, notUsed, metadataManager) {
     _classCallCheck(this, CommunicationManager);
@@ -38,6 +41,7 @@ var CommunicationManager = exports["default"] = /*#__PURE__*/function () {
     this.windowId = cw.windowId;
     this.cw = cw;
     this.metadataManager = metadataManager;
+    this.eventReceiver = new _EventReceiver["default"](cw);
     this.setupListeners();
     this.startPing();
   }
@@ -57,12 +61,23 @@ var CommunicationManager = exports["default"] = /*#__PURE__*/function () {
           case 'pong':
             if (data.sourceWindowId !== _this.windowId) _this.metadataManager.markWindowAsActive(data.sourceWindowId);
             break;
-          case 'sendMessage':
+          case 'message':
             if (data.targetWindowId === 'any') _this.cw.emit('message', data);
             if (data.targetWindowId === _this.windowId) _this.cw.emit('message', data);
             break;
           case 'intersecting':
             if (data.sourceWindowId !== _this.windowId) _this.cw.emit('intersecting', data);
+            break;
+          case 'keydown':
+          case 'keyup':
+            // do not repeat own inputs
+            if (data.sourceWindowId === _this.windowId) {
+              return;
+            }
+            _this.eventReceiver.handleKeyboardEvent(data);
+            break;
+          case 'mouseEvent':
+            _this.eventReceiver.handleMouseEvent(data);
             break;
         }
       };
@@ -80,26 +95,22 @@ var CommunicationManager = exports["default"] = /*#__PURE__*/function () {
     }
   }, {
     key: "sendMessage",
-    value: function sendMessage(targetWindowId, message) {
-      if (targetWindowId === this.windowId) {
+    value: function sendMessage(message) {
+      if (message.targetWindowId === this.windowId) {
         this.cw.emit('message', {
           sourceWindowId: this.windowId,
           payload: message
         });
         return;
       }
-      this.channel.postMessage({
-        action: 'sendMessage',
-        targetWindowId: targetWindowId,
-        sourceWindowId: this.windowId,
-        payload: message
-      });
+      message.sourceWindowId = this.windowId;
+      this.channel.postMessage(message);
     }
   }]);
   return CommunicationManager;
 }();
 
-},{}],3:[function(require,module,exports){
+},{"./EventReceiver.js":4}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -111,6 +122,8 @@ var _open = _interopRequireDefault(require("./open.js"));
 var _CommunicationManager = _interopRequireDefault(require("./CommunicationManager.js"));
 var _MetadataManager = _interopRequireDefault(require("./MetadataManager.js"));
 var _IntersectionDetector = _interopRequireDefault(require("./IntersectionDetector.js"));
+var _KeyboardEventBroadcaster = _interopRequireDefault(require("./KeyboardEventBroadcaster.js"));
+var _MouseEventBroadcaster = _interopRequireDefault(require("./MouseEventBroadcaster.js"));
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -122,15 +135,18 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
 // Supports opening new windows, sending messages, and teleporting entities between windows
 // Also supports detecting and handling window intersections
 var CrossWindow = exports["default"] = /*#__PURE__*/function () {
-  function CrossWindow(game) {
-    var metadataKey = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'windowMetadata';
+  function CrossWindow() {
+    var config = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
     _classCallCheck(this, CrossWindow);
-    this.metadataKey = metadataKey;
+    this.config = {};
+    this.config.metadataKey = config.metadataKey || 'windowMetadata';
     this.events = {};
     this.windowId = "".concat(Date.now(), "-").concat(Math.random().toString(36).substr(2, 9));
-    this.metadataManager = new _MetadataManager["default"](metadataKey, this);
+    this.metadataManager = new _MetadataManager["default"](this);
     this.communicationManager = new _CommunicationManager["default"](new BroadcastChannel('crosswindow_channel'), this, null, this.metadataManager);
     this.intersectionDetector = new _IntersectionDetector["default"](this.metadataManager, this.windowId);
+    this.keyboardEventBroadcaster = new _KeyboardEventBroadcaster["default"](this);
+    this.mouseEventBroadcaster = new _MouseEventBroadcaster["default"](this);
     this.open = _open["default"].bind(this);
     this.getBestWindow = _getBestWindow["default"].bind(this);
     this.getWindows = this.metadataManager.getWindows.bind(this.metadataManager);
@@ -184,7 +200,70 @@ var CrossWindow = exports["default"] = /*#__PURE__*/function () {
   return CrossWindow;
 }();
 
-},{"./CommunicationManager.js":2,"./IntersectionDetector.js":4,"./MetadataManager.js":5,"./getBestWindow.js":6,"./open.js":7}],4:[function(require,module,exports){
+},{"./CommunicationManager.js":2,"./IntersectionDetector.js":5,"./KeyboardEventBroadcaster.js":6,"./MetadataManager.js":7,"./MouseEventBroadcaster.js":8,"./getBestWindow.js":9,"./open.js":10}],4:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports["default"] = void 0;
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, _toPropertyKey(descriptor.key), descriptor); } }
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); Object.defineProperty(Constructor, "prototype", { writable: false }); return Constructor; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : String(i); }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+var EventReceiver = exports["default"] = /*#__PURE__*/function () {
+  function EventReceiver(crosswindow) {
+    _classCallCheck(this, EventReceiver);
+    this.crosswindow = crosswindow;
+  }
+  _createClass(EventReceiver, [{
+    key: "handleKeyboardEvent",
+    value: function handleKeyboardEvent(data) {
+      if (data.sourceWindowId === this.crosswindow.windowId) {
+        // Don't process own inputs
+        return;
+      }
+
+      // Dispatch the keyboard event locally
+      var event = new KeyboardEvent(data.action, {
+        code: data.message.code,
+        repeat: data.message.repeat,
+        shiftKey: data.message.shiftKey,
+        ctrlKey: data.message.ctrlKey,
+        altKey: data.message.altKey,
+        metaKey: data.message.metaKey,
+        bubbles: false
+      });
+      document.dispatchEvent(event);
+    }
+  }, {
+    key: "handleMouseEvent",
+    value: function handleMouseEvent(data) {
+      if (data.sourceWindowId === this.crosswindow.windowId) {
+        // Don't process own inputs
+        return;
+      }
+
+      // Dispatch the mouse event locally
+      var event = new MouseEvent(data.message.type, {
+        clientX: data.message.x,
+        clientY: data.message.y,
+        button: data.message.button,
+        ctrlKey: data.message.ctrlKey,
+        shiftKey: data.message.shiftKey,
+        altKey: data.message.altKey,
+        metaKey: data.message.metaKey,
+        bubbles: false
+      });
+      document.dispatchEvent(event);
+    }
+  }]);
+  return EventReceiver;
+}();
+
+},{}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -278,7 +357,75 @@ var IntersectionDetector = exports["default"] = /*#__PURE__*/function () {
   return IntersectionDetector;
 }();
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports["default"] = void 0;
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, _toPropertyKey(descriptor.key), descriptor); } }
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); Object.defineProperty(Constructor, "prototype", { writable: false }); return Constructor; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : String(i); }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+var KeyboardEventBroadcaster = exports["default"] = /*#__PURE__*/function () {
+  function KeyboardEventBroadcaster(crosswindow) {
+    _classCallCheck(this, KeyboardEventBroadcaster);
+    this.cw = crosswindow;
+    this.initEventListeners();
+  }
+  _createClass(KeyboardEventBroadcaster, [{
+    key: "initEventListeners",
+    value: function initEventListeners() {
+      window.document.addEventListener('keydown', this.handleKeyboardEvent.bind(this));
+      window.document.addEventListener('keyup', this.handleKeyboardEvent.bind(this));
+    }
+  }, {
+    key: "handleKeyboardEvent",
+    value: function handleKeyboardEvent(event) {
+      // Return early if event should not be propagated
+      if (event.bubbles === false) {
+        return;
+      }
+
+      // Serialize the keyboard event with relevant properties
+      var keyboardMessage = {
+        key: event.key,
+        code: event.code,
+        keyCode: event.keyCode,
+        repeat: event.repeat,
+        type: event.type,
+        shiftKey: event.shiftKey,
+        ctrlKey: event.ctrlKey,
+        altKey: event.altKey,
+        metaKey: event.metaKey,
+        bubbles: false
+      };
+      console.log('sending event keyevent', event.type);
+      // Broadcast the keyboard event to all crosswindow targets
+
+      this.cw.communicationManager.sendMessage({
+        targetWindowId: 'any',
+        action: event.type,
+        // 'keydown' or 'keyup'
+        message: keyboardMessage
+      });
+
+      /*
+      this.crosswindow.postMessage({
+        targetWindowId: 'any',
+        action: event.type, // 'keydown' or 'keyup'
+        message: keyboardMessage
+      });
+      */
+    }
+  }]);
+  return KeyboardEventBroadcaster;
+}();
+
+},{}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -301,9 +448,9 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : String(i); }
 function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 var MetadataManager = exports["default"] = /*#__PURE__*/function () {
-  function MetadataManager(metadataKey, cw) {
+  function MetadataManager(cw) {
     _classCallCheck(this, MetadataManager);
-    this.metadataKey = metadataKey;
+    this.config = cw.config;
     this.windowId = cw.windowId;
     this.emit = cw.emit.bind(cw);
     this.currentWindows = {};
@@ -324,7 +471,7 @@ var MetadataManager = exports["default"] = /*#__PURE__*/function () {
   }, {
     key: "getWindows",
     value: function getWindows() {
-      return JSON.parse(localStorage.getItem(this.metadataKey)) || {};
+      return JSON.parse(localStorage.getItem(this.config.metadataKey)) || {};
     }
   }, {
     key: "startHeartbeat",
@@ -411,18 +558,18 @@ var MetadataManager = exports["default"] = /*#__PURE__*/function () {
     key: "updateWindowMetadata",
     value: function updateWindowMetadata() {
       var metadata = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.getWindowMetadata();
-      var allWindowsMetadata = JSON.parse(localStorage.getItem(this.metadataKey)) || {};
+      var allWindowsMetadata = JSON.parse(localStorage.getItem(this.config.metadataKey)) || {};
       allWindowsMetadata[this.windowId] = _objectSpread(_objectSpread({}, metadata), {}, {
         lastActive: Date.now()
       });
-      localStorage.setItem(this.metadataKey, JSON.stringify(allWindowsMetadata));
+      localStorage.setItem(this.config.metadataKey, JSON.stringify(allWindowsMetadata));
     }
   }, {
     key: "removeInactiveWindows",
     value: function removeInactiveWindows() {
       var _this4 = this;
       var timeout = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1000;
-      var allWindowsMetadata = JSON.parse(localStorage.getItem(this.metadataKey)) || {};
+      var allWindowsMetadata = JSON.parse(localStorage.getItem(this.config.metadataKey)) || {};
       var currentTime = Date.now();
       //console.log('removeInactiveWindows', allWindowsMetadata, currentTime, timeout)
       Object.entries(allWindowsMetadata).forEach(function (_ref) {
@@ -435,29 +582,99 @@ var MetadataManager = exports["default"] = /*#__PURE__*/function () {
           _this4.currentWindows[windowId] = null;
         }
       });
-      localStorage.setItem(this.metadataKey, JSON.stringify(allWindowsMetadata));
+      localStorage.setItem(this.config.metadataKey, JSON.stringify(allWindowsMetadata));
     }
   }, {
     key: "markWindowAsActive",
     value: function markWindowAsActive(windowId) {
-      var allWindowsMetadata = JSON.parse(localStorage.getItem(this.metadataKey)) || {};
+      var allWindowsMetadata = JSON.parse(localStorage.getItem(this.config.metadataKey)) || {};
       if (allWindowsMetadata[windowId]) {
         allWindowsMetadata[windowId].lastActive = Date.now();
-        localStorage.setItem(this.metadataKey, JSON.stringify(allWindowsMetadata));
+        localStorage.setItem(this.config.metadataKey, JSON.stringify(allWindowsMetadata));
       }
     }
   }, {
     key: "deregisterWindow",
     value: function deregisterWindow() {
-      var allWindowsMetadata = JSON.parse(localStorage.getItem(this.metadataKey)) || {};
+      var allWindowsMetadata = JSON.parse(localStorage.getItem(this.config.metadataKey)) || {};
       delete allWindowsMetadata[this.windowId];
-      localStorage.setItem(this.metadataKey, JSON.stringify(allWindowsMetadata));
+      localStorage.setItem(this.config.metadataKey, JSON.stringify(allWindowsMetadata));
     }
   }]);
   return MetadataManager;
 }();
 
-},{}],6:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports["default"] = void 0;
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, _toPropertyKey(descriptor.key), descriptor); } }
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); Object.defineProperty(Constructor, "prototype", { writable: false }); return Constructor; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : String(i); }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+var MouseEventBroadcaster = exports["default"] = /*#__PURE__*/function () {
+  function MouseEventBroadcaster(crosswindow) {
+    _classCallCheck(this, MouseEventBroadcaster);
+    this.cw = crosswindow;
+    this.initEventListeners();
+  }
+  _createClass(MouseEventBroadcaster, [{
+    key: "initEventListeners",
+    value: function initEventListeners() {
+      var _this = this;
+      // List of mouse events you want to broadcast
+      var mouseEvents = ['click', 'mousedown', 'mouseup', 'mousemove'];
+      mouseEvents.forEach(function (eventType) {
+        window.document.addEventListener(eventType, _this.handleMouseEvent.bind(_this));
+      });
+    }
+  }, {
+    key: "handleMouseEvent",
+    value: function handleMouseEvent(event) {
+      // Return early if event should not be propagated
+      if (event.bubbles === false) {
+        return;
+      }
+      if (!this.shouldBroadcastEvent(event)) {
+        return;
+      }
+
+      // Serialize the mouse event with relevant properties
+      var mouseMessage = {
+        type: event.type,
+        x: event.clientX,
+        y: event.clientY,
+        button: event.button,
+        ctrlKey: event.ctrlKey,
+        shiftKey: event.shiftKey,
+        altKey: event.altKey,
+        metaKey: event.metaKey
+      };
+
+      // Broadcast the mouse event to all crosswindow targets
+      this.cw.communicationManager.sendMessage({
+        targetWindowId: 'any',
+        action: 'mouseEvent',
+        message: mouseMessage
+      });
+    }
+  }, {
+    key: "shouldBroadcastEvent",
+    value: function shouldBroadcastEvent(event) {
+      // Implement any logic to determine whether the event should be broadcasted
+      // For example, you might want to limit mousemove events to avoid flooding
+      return true; // For simplicity, broadcasting all events
+    }
+  }]);
+  return MouseEventBroadcaster;
+}();
+
+},{}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -470,6 +687,8 @@ function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o =
 function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i]; return arr2; }
 function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
 function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+// TODO: refactor this file a bit and split into multiple files with classes
+// Remark: We'll need more advanced logic for window layout and positioning ( cascadee / tile / grid / etc )
 function calculateEntryPosition(direction, position, bestWindowId) {
   // get the latest metadata about bestWindowId from localStorage
   var allWindowsMetadata = JSON.parse(localStorage.getItem('windowMetadata')) || {};
@@ -549,7 +768,7 @@ function getBestWindow(entityData) {
   var _this = this;
   // TODO: entityData.position? we need an API semantic here for .position and .screenPosition
   var direction = determineCardinalDirection(entityData.screenPosition);
-  var allWindowsMetadata = JSON.parse(localStorage.getItem(this.metadataKey)) || {};
+  var allWindowsMetadata = JSON.parse(localStorage.getItem(this.config.metadataKey)) || {};
   if (Object.keys(allWindowsMetadata).length === 0) {
     game.flashMessage('no other windows found');
     return;
@@ -694,12 +913,13 @@ function prepareBestWindowResponse(cw, bestWindowId, direction, entityData) {
       var newEntryPosition = calculateEntryPosition(direction, data.position, bestWindowId);
       data.position = newEntryPosition;
       data.direction = direction;
-      cw.communicationManager.sendMessage(bestWindowId, data);
+      data.targetWindowId = bestWindowId;
+      cw.communicationManager.sendMessage(data);
     }
   };
 }
 
-},{}],7:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
