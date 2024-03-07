@@ -1,6 +1,9 @@
-<h3 align="center">
+<h1 align="center">
 
   CrossWindow.js - Alpha
+  
+![cross-window-debugger](https://github.com/yantra-core/CrossWindow.js/assets/70011/6b851631-d4cd-419d-897e-3153d3bf1fb0)
+![cross-window-mantra](https://github.com/yantra-core/CrossWindow.js/assets/70011/8de99b33-ff63-487c-866e-99b85a02227d)
 
 </h3>
 
@@ -9,6 +12,7 @@
   <a href="#install">Installation</a> •
   <a href="#contributing">Contributing</a>
 </h4>
+
 
 
 A `22kb` library for managing spatially aware cross-window browser messages. 
