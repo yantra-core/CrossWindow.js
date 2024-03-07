@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>CrossWindow.js API Demo</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://yantra.gg/labyrinthos/browser/vendor/jquery.min.js"></script>
+  <meta name="description" content="A JavaScript procedural generator for Mazes, Terrains, and Biomes">
+  
+  <style>
+    .main {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      flex-direction: column;
+    }
+
+    .main a {
+      font-size: 24px;
+    }
+
+    button {
+      position: fixed;
+      padding: 20px;
+      font-size: 24px;
+      cursor: pointer;
+      z-index: 9999;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+  </style>
+</head>
+
+<body>
+  <script src="http://yantra.gg/crosswindow.js"></script>
+  <script src="http://yantra.gg/crosswindow.debugger.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+
+      let crosswindow = new CW.CrossWindow();
+      let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow);
+
+      document.querySelectorAll('#openWindowButtons button').forEach(button => {
+        button.addEventListener('click', () => {
+          const windowWidth = window.innerWidth;
+          const windowHeight = window.outerHeight - 75;
+          const top = window.screenX;
+          const left = window.screenY;
+
+          // Open new CrossWindow
+          crosswindow.open('api.html', {
+            width: windowWidth,
+            height: windowHeight,
+            top: top,
+            left: left + window.outerWidth,
+          }, true);
+
+        });
+      });
+
+      crosswindow.on('windowClosed', function (currentWindowMetadata) {
+        console.log('windowClosed', currentWindowMetadata);
+      });
+
+      crosswindow.on('windowChanged', function (currentWindowMetadata) {
+        // console.log('windowChanged', currentWindowMetadata);
+      });
+
+      crosswindow.on('message', function (event) {
+        console.log('message', event);
+      });
+
+      setInterval(function () {
+        let bestWindow = crosswindow.getBestWindow({
+          // the current position we are at in the current window
+          position: {
+            x: 100,
+            y: 100
+          },
+          // any position on or off the screen, using screenX and screenY as the reference
+          screenPosition: {
+            x: 1000,
+            y: 1000
+          }
+        });
+
+        console.log('bestWindow', bestWindow)
+
+        // use BroadcastChannel postMessage to send a message to the best window
+        bestWindow.postMessage({
+          position: {
+            x: 100,
+            y: 100
+          },
+          message: 'Hello from the main window'
+        })
+
+      }, 1000);
+
+    });
+  </script>
+  <div class="main">
+    <div>
+      <h1>CrossWindow.js API Demo</h1>
+    </div>
+    <div>
+      <a href="https://github.com/yantra-core/CrossWindow.js">Github Source</a>
+    </div>
+    <div class="switchExample">
+      <a href="https://yantra.gg/crosswindow">Switch to Mantra.js Game Example</a>
+    </div>
+
+    <div id="openWindowButtons">
+      <button>Open Window</button>
+    </div>
+
+  </div>
+</body>
+
+</html>
