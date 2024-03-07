@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>CrossWindow.js Request Animation Frame Loop Demo</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://yantra.gg/labyrinthos/browser/vendor/jquery.min.js"></script>
+  <meta name="description" content="A JavaScript procedural generator for Mazes, Terrains, and Biomes">
+
+  <style>
+
+    body {
+      overflow: hidden;
+    }
+    .main {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      flex-direction: column;
+    }
+
+    .main a {
+      font-size: 24px;
+    }
+
+    button {
+      position: fixed;
+      padding: 20px;
+      font-size: 24px;
+      cursor: pointer;
+      z-index: 9999;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+  </style>
+</head>
+
+<body>
+  <!--
+
+  <script src="http://yantra.gg/crosswindow.js"></script>
+  <script src="http://yantra.gg/crosswindow.debugger.js"></script>
+  -->
+  <script src="/crosswindow.js"></script>
+  <script src="/crosswindow.debugger.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+
+      let crosswindow = new CW.CrossWindow();
+      let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow);
+
+      document.querySelectorAll('#openWindowButtons button').forEach(button => {
+        button.addEventListener('click', () => {
+          const windowWidth = window.innerWidth;
+          const windowHeight = window.outerHeight - 75;
+          const top = window.screenX;
+          const left = window.screenY;
+
+          // Open new CrossWindow
+          crosswindow.open('raf-loop.html?win', {
+            width: windowWidth,
+            height: windowHeight,
+            top: top,
+            left: left + window.outerWidth,
+          }, true);
+
+        });
+      });
+
+      crosswindow.on('windowOpened', function (currentWindowMetadata) {
+        //console.log('windowOpened', currentWindowMetadata);
+      });
+
+
+      crosswindow.on('windowClosed', function (currentWindowMetadata) {
+       // console.log('windowClosed', currentWindowMetadata);
+      });
+
+      crosswindow.on('windowChanged', function (currentWindowMetadata) {
+        // console.log('windowChanged', currentWindowMetadata);
+      });
+
+      crosswindow.on('message', function (event) {
+        let data = event.payload;
+        console.log('GOT message', data);
+        // recreate the element based on data.position, data.style, data.id
+        const element = document.createElement('div');
+        element.id = data.id;
+        element.style.position = 'absolute';
+        element.style.left = `${data.position.x}px`;
+        //element.style.left = 0;
+
+        // if the data.position.y has exceeded the window height, set to 0
+        if (data.position.y > window.innerHeight) {
+          data.position.y = 0;
+        }
+
+        element.style.top = `${data.position.y}px`;
+        element.style.color = data.style.color;
+        element.style.fontSize = data.style.fontSize;
+        element.textContent = data.textContent;
+        // no wrap
+        element.style.whiteSpace = 'nowrap';
+        document.body.appendChild(element);
+      });
+
+      function trackElementVisibilityRAF(elementId) {
+        function checkVisibility() {
+          const element = document.getElementById(elementId);
+          if (!element) {
+            console.warn(`Element with ID '${elementId}' not found.`);
+            requestAnimationFrame(checkVisibility); // Keep trying
+            return;
+          }
+
+          // move the element to the right a little bit each frame
+          element.style.left = `${parseInt(element.style.left || 0) + 6}px`;
+
+          const rect = element.getBoundingClientRect();
+          const isVisible = rect.top < window.innerHeight && rect.bottom >= 0 && rect.left < window.innerWidth && rect.right >= 0;
+          if (!isVisible) {
+            console.log(`Element with ID '${elementId}' has left the viewport.`);
+            // Perform any actions needed when the element is out of the viewport
+            let bestWindow = crosswindow.getBestWindow({
+              position: {
+                x: rect.left,
+                y: rect.top
+              },
+              screenPosition: { // send the element to the right of the current window
+                x: window.screenX + window.outerWidth,
+                y: window.screenY
+              }
+            });
+
+            bestWindow.postMessage({
+              id: elementId,
+              position: {
+                x: rect.left,
+                y: rect.top + 100 // moves the element down 100 pixels each time it leaves the viewport
+              },
+              textContent: 'Hello from: ' + crosswindow.windowId.split('-')[1],
+              style: {
+                color: 'purple',
+                fontSize: '128px',
+                width: '1000px',
+              },
+              message: 'Hello from the main window'
+            
+            })
+
+            // remove the entity
+            element.remove();
+
+            // Make sure to handle bestWindow, e.g., open it or move the element to it.
+          }
+          requestAnimationFrame(checkVisibility); // Continue the loop
+        }
+
+        checkVisibility(); // Start the loop
+      }
+
+      // check if query string contains "win", if so, remove ball
+      if (window.location.search.includes('win')) {
+        const element = document.getElementById('the-ball');
+        if (element) {
+          element.remove();
+        }
+      }
+
+      trackElementVisibilityRAF('the-ball');
+
+
+    });
+  </script>
+  <div id="the-ball" style="position: absolute; color: purple; font-size: 128px; width: 1000px;">Hello</div>
+  <div class="main">
+    <div>
+      <h1>CrossWindow.js API Demo</h1>
+    </div>
+    <div>
+      <a href="https://github.com/yantra-core/CrossWindow.js">Github Source</a>
+    </div>
+    <div class="switchExample">
+      <a href="/crosswindow.html">Switch to Mantra.js Game Example</a>
+    </div>
+
+    <div id="openWindowButtons">
+      <button>Open Window</button>
+    </div>
+
+  </div>
+</body>
+
+</html>
