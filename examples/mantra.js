@@ -1471,6 +1471,17 @@ var Game = exports.Game = /*#__PURE__*/function () {
       this.currentPlayerId = playerId;
     }
   }, {
+    key: "removeEntitiesByType",
+    value: function removeEntitiesByType(type) {
+      var _this = this;
+      var entities = this.getEntitiesByType(type);
+      if (entities) {
+        entities.forEach(function (entity) {
+          _this.removeEntity(entity.id);
+        });
+      }
+    }
+  }, {
     key: "getEntitiesByType",
     value: function getEntitiesByType(type) {
       if (this.data && this.data.ents && this.data.ents[type]) return this.data.ents[type];
@@ -2865,6 +2876,8 @@ var _default = exports["default"] = {
   "./plugins/CSSGraphics.min.js": "f1c1d91d070a4fd870c4402ff73d0a02dc4a8d1c4fa62fe8c11766b0deaa4d1d",
   "./plugins/Graphics.js": "349ef373638a229c9bd6b129aed466e23955f5ec8c21a303f716e9f9979ca21b",
   "./plugins/Graphics.min.js": "545b75c0728a493dc9f627639661f1d4d1a8f13b8fb93f79955bd44c3a77d7b1",
+  "./plugins/Keyboard.js": "4ea7c389172a37f35ab4117ed74c0d4a05ec279d7c9c5e3072a5dafeffb8fa3b",
+  "./plugins/Keyboard.min.js": "187ce1d42e0977c01f2ffa7b88d2775cf46a145cd8d6203bb2e68ee9f75d5e42",
   "./plugins/Mouse.js": "384b8877f5413a3296a5e6cc13f8e6da14353335ebf2a6b4c99867b32dad4db9",
   "./plugins/Mouse.min.js": "cbb048835fe6900e21ed479ace055da04975bf4486f128a3f98be29474c08fcb"
 };
