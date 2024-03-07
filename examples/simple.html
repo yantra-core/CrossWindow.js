@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
 
-
 <head>
   <title>CrossWindow.js Demo</title>
   <meta charset="UTF-8">
@@ -11,201 +10,131 @@
   <script src="./crosswindow.js"></script>
   <script src="./crosswindow.debugger.js"></script>
 
-
   <style>
-    .debug-window-box {
-      border: 2px solid white;
-      background-color: black;
-      /* spotted line border */
-      border-style: dashed;
-      border-width: 6px;
-      border-color: yellow;
-      color: white;
-      font-size: 20px;
-      position: absolute;
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: 8px;
-      z-index: 11111;
-    }
-
-    .position-info {
-      margin-top: 8px;
-      text-align: left;
-      z-index: 11111;
-
-    }
-
-    #windowsContainer {
-      /* background-color: aqua; */
-      z-index: 8888;
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      /* opacity: 0.3; */
-    }
-
     .main {
       position: relative;
       /* Makes .main the reference for absolutely positioned children */
-      width: 100vw;
-      height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
       text-align: center;
+      flex-direction: column;
+    }
+
+    .main a {
+      font-size: 24px;
     }
 
     button {
-      position: absolute;
-      /* Position buttons absolutely within .main */
+      position: fixed;
+      /* Use fixed positioning for center alignment regardless of scrolling */
       padding: 20px;
       font-size: 24px;
       cursor: pointer;
       z-index: 9999;
-    }
-
-    button[data-direction="N"] {
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
-    }
-
-    button[data-direction="NE"] {
-      top: 0;
-      right: 0;
-    }
-
-    button[data-direction="E"] {
       top: 50%;
-      right: 0;
-      transform: translateY(-50%);
-    }
-
-    button[data-direction="SE"] {
-      bottom: 0;
-      right: 0;
-    }
-
-    button[data-direction="S"] {
-      bottom: 0;
+      /* Position the top edge of the button at the middle of the screen */
       left: 50%;
-      transform: translateX(-50%);
+      /* Position the left edge of the button at the middle of the screen */
+      transform: translate(-50%, -50%);
+      /* Offset the button back by its own half width and height to center it */
     }
 
-    button[data-direction="SW"] {
-      bottom: 0;
-      left: 0;
+    .switchExample a {
+      z-index: 9999;
+      padding: 0.5em;
+      font-size: 0.8em;
     }
 
-    button[data-direction="W"] {
-      top: 50%;
-      left: 0;
-      transform: translateY(-50%);
-    }
-
-    button[data-direction="NW"] {
-      top: 0;
-      left: 0;
-    }
-
-    /* adds response query for width and button size */
-    @media (max-width: 600px) {
-      button {
-        padding: 10px;
-        font-size: 12px;
-      }
-    }
   </style>
 </head>
 
 <body>
-  <div id="openWindowButtons">
-    <button>Open Window</button>
-  </div>
   <script>
-    let crosswindow = new CW.CrossWindow();
-    let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow);
 
-  
-    document.querySelectorAll('#openWindowButtons button').forEach(button => {
-      button.addEventListener('click', function () {
-        const direction = this.getAttribute('data-direction');
-        const windowWidth = window.innerWidth;
-        const windowHeight = window.outerHeight - 75;
-        const offsetX = window.screenX; // Current window's distance from the left edge of the screen
-        const offsetY = window.screenY; // Current window's distance from the top edge of the screen
-        let buffer = 10; // Define a buffer distance for the new window
-        let top = offsetY, left = offsetX;
-
-        //console.log('top', top, 'left', left);
-
-        // Open new window with calculated top and left positions
-        crosswindow.open('simple.html', {
-          width: windowWidth,
-          height: windowHeight,
-          top: top /*- window.outerHeight*/,
-          left: left + window.outerWidth,
-        }, true);
-      });
-    });
+function isTouchDevice() {
+      return 'ontouchstart' in window || navigator.maxTouchPoints;
+    }
 
     document.addEventListener('DOMContentLoaded', (event) => {
 
-      crosswindow.on('windowClosed', function (currentWindowMetadata) {
-        // remove the window preview if exists
-        let windowBox = document.getElementById('windowBox_' + currentWindowMetadata.windowId);
-        if (windowBox) {
-          windowBox.remove();
+      if (isTouchDevice()) {
+        alert('Please note CrossWindow multi-window demo is not optimized for touch devices.');
+      }
+
+      let crosswindow = new CW.CrossWindow();
+      let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow, {
+        windowBoxStyle: {
+          "border": "2px solid white",
+          "backgroundColor": "black",
+          "borderStyle": "dashed",
+          "borderWidth": "6px",
+          "borderColor": "yellow",
+          "color": "white",
+          "fontSize": "20px",
+          "position": "absolute",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "flexDirection": "column",
+          "justifyContent": "center",
+          "alignItems": "center",
+          "padding": "8px",
+          "zIndex": "11111"
         }
       });
 
-      // TODO: move this debugger window code into library
+      document.querySelectorAll('#openWindowButtons button').forEach(button => {
+        button.addEventListener('click', () => {
+          const windowWidth = window.innerWidth;
+          const windowHeight = window.outerHeight - 75; // slight adjustment for missing top bar
+          const top = window.screenX;
+          const left = window.screenY;
+
+          // Open new CrossWindow
+          crosswindow.open('simple.html', {
+            width: windowWidth,
+            height: windowHeight,
+            top: top /*- window.outerHeight*/,
+            left: left + window.outerWidth,
+          }, true);
+        });
+      });
+
+      // TODO: we could have nice little divs for each of these which are displaying the data
+      // as it comes in, be sure to truncate the DOM content as it comes in so we don't get a memory leak
+      // TODO: add all events from CrossWindow.js
+      crosswindow.on('windowClosed', function (currentWindowMetadata) {
+        // console.log('windowClosed', currentWindowMetadata);
+      });
+
       crosswindow.on('windowChanged', function (currentWindowMetadata) {
         // console.log('windowChanged', currentWindowMetadata);
-
-
-        if (currentWindowMetadata.windowId === crosswindow.windowId) {
-          // do not create a box for the current window
-          // return;
-        }
-
-        crosswindow.updateOrCreateDebugContainer(currentWindowMetadata);
-
       });
-
-      crosswindow.pollWindows();
 
       crosswindow.on('message', function (event) {
-        console.log('message', event);
-      });
-
-      // this will render the current window box *once* immediately on load
-      // TODO: move to lib
-      crosswindow.emit('windowChanged', {
-        windowId: crosswindow.windowId,
-        metadata: {
-          position: {
-            x: window.screenX,
-            y: window.screenY
-          },
-          size: {
-            width: window.innerWidth,
-            height: window.innerHeight
-          }
-        }
+        // console.log('message', event);
       });
 
     });
 
-
   </script>
+<div class="main">
 
+  <div>
+    <h1>Simple CrossWindow.js Demo</h1>
+  </div>
+  <div>
+    <a href="https://github.com/yantra-core/CrossWindow.js">Github Source</a>
+  </div>
+  <div class="switchExample">
+    <a href="/index.html">Switch to Mantra.js Game Example</a>
+  </div>
+
+  <div id="openWindowButtons">
+    <button>Open Window</button>
+  </div>
+
+</div>
 </body>
 
 </html>

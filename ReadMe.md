@@ -1,5 +1,3 @@
-
-
 <h3 align="center">
 
   CrossWindow.js - Alpha
@@ -13,15 +11,11 @@
 </h4>
 
 
-
 A `22kb` library for managing spatially aware cross-window browser messages. 
 
 CrossWindow.js is used for building web applications that need to be aware of the positional data of other open browser windows. It's useful for building apps that need to teleport objects between browser windows.
 
 *image here*
-
-## IT CAN TELEPORT STUFF BETWEEN BROWSER WINDOWS
-
 
 ## Video and Live Demos
 
@@ -68,7 +62,6 @@ npm install crosswindow
 <a name="install"></a>
 ```
 
-
 # How
 
   - Window Discovery and metadata handled by Local Storage
@@ -77,10 +70,9 @@ npm install crosswindow
 
 # Features
 
-  - Opens and manages browser with Cross Window communications
-  - Built in `crosswindow.getBestWindow(screenPosition)` method for calculating best window to place entity
-  - Intersection events for overlapping windows ( WIP )
-
+  - [✅] Opens and manages browser with Cross Window communications
+  - [✅] `getBestWindow(screenPosition)` for calculating "best" window for screen position
+  - [✅]  Intersection events for overlapping windows ( WIP needs demo )
 
 ### Contributing
 

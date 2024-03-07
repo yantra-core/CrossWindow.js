@@ -13,20 +13,34 @@
   <script src="./crosswindow.debugger.js"></script>
 
   <style>
-
-
     .main {
       position: relative;
-      width: 100vw;
-      height: 100vh;
+      /* Makes .main the reference for absolutely positioned children */
       display: flex;
       justify-content: center;
       align-items: center;
+      text-align: center;
+      flex-direction: column;
+      color: white;
+      top: 20%;
+      overflow: auto;
+    }
+
+    .main a {
+      font-size: 24px;
+      color: white
+    }
+
+    .help {
+      /* should appear at the bottom 30% of screen */
+      position: relative;
+      top: 100px;
+      padding: 1em;
     }
 
     button {
       position: absolute;
-      padding: 0.1em;
+      padding: 0.3em;
       font-size: 1.5em;
       height: 3em;
       /* Responsive font size */
@@ -43,8 +57,8 @@
 
     #openWindowButtons {
       position: absolute;
-      bottom: 100px;
-      right: 130px;
+      top: 10px;
+      right: 160px;
       z-index: 9999;
       display: flex;
       flex-direction: column;
@@ -55,50 +69,55 @@
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
     }
 
-
-
-    @media (max-width: 600px) {
-      button {
-        padding: 0.5em;
-        font-size: 0.75em;
-        /* Smaller font size for small screens */
-      }
+    .switchExample a {
+      z-index: 9999;
+      padding: 0.5em;
+      font-size: 0.8em;
     }
+
   </style>
 </head>
 
 <body>
 
-  <div id="openWindowButtons">
-    <button>Open Window</button>
-  </div>
   <script>
     let crosswindow = new CW.CrossWindow();
-    let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow);
+    // optionally we can run the debugger to show the window grid
+    // let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow);
 
-    document.querySelectorAll('#openWindowButtons button').forEach(button => {
-      button.addEventListener('click', function () {
-        const direction = this.getAttribute('data-direction');
-        const windowWidth = window.innerWidth;
-        const windowHeight = window.outerHeight - 75;
-        const offsetX = window.screenX; // Current window's distance from the left edge of the screen
-        const offsetY = window.screenY; // Current window's distance from the top edge of the screen
-        let buffer = 10; // Define a buffer distance for the new window
-        let top = offsetY, left = offsetX;
+    function isTouchDevice() {
+      return 'ontouchstart' in window || navigator.maxTouchPoints;
+    }
 
-        //console.log('top', top, 'left', left);
-
-        // Open new window with calculated top and left positions
-        crosswindow.open('index.html?win', {
-          width: windowWidth,
-          height: windowHeight,
-          top: top /*- window.outerHeight*/,
-          left: left + window.outerWidth,
-        }, true);
-      });
-    });
 
     document.addEventListener('DOMContentLoaded', (event) => {
+
+      if (isTouchDevice()) {
+        alert('Please note CrossWindow multi-window demo is not optimized for touch devices.');
+      }
+      
+      document.querySelectorAll('#openWindowButtons button').forEach(button => {
+        button.addEventListener('click', function () {
+          const direction = this.getAttribute('data-direction');
+          const windowWidth = window.innerWidth;
+          const windowHeight = window.outerHeight - 75;
+          const offsetX = window.screenX; // Current window's distance from the left edge of the screen
+          const offsetY = window.screenY; // Current window's distance from the top edge of the screen
+          let buffer = 10; // Define a buffer distance for the new window
+          let top = offsetY, left = offsetX;
+
+          //console.log('top', top, 'left', left);
+
+          // Open new window with calculated top and left positions
+          crosswindow.open('index.html?win', {
+            width: windowWidth,
+            height: windowHeight,
+            top: top /*- window.outerHeight*/,
+            left: left + window.outerWidth,
+          }, true);
+        });
+      });
+
       let game = new MANTRA.Game({
         graphics: ['css'], // array enum, 'babylon', 'css', 'three'
         // Plugins at construction
@@ -109,6 +128,12 @@
       });
       window.game = game;
       game.config.entityEmitsViewportExitEvent = true;
+
+      // Movements with right click, switch default left-click-to-move behavior
+      game.config.mouseMovementButton = 'LEFT';
+      // Actions with left click
+      game.config.mouseActionButton = 'RIGHT';
+
 
       let remoteEntMap = {};
 
@@ -182,19 +207,19 @@
           builder.health(entityData.health);
           builder.velocity(entityData.velocity.x, entityData.velocity.y);
           builder.rotation(entityData.rotation);
-          
+
           // Remark: Here is a special case where we need to send the full
           // item over the cross window instead of ent reference
           // since the relational data is from another mantra instance ( and no longer valid )
           // re-inflate all the items manually
           let itemIds = [];
-          entityData.items.forEach(function(ent){
+          entityData.items.forEach(function (ent) {
             ent.owner = game.currentPlayerId
             let id = game.createEntity(ent);
             itemIds.push(id);
           });
           builder.items(itemIds);
-          
+
           builder.x(position.x).y(position.y);
           builder.z(1); // for now
           // console.log('creating local ent', builder.config);
@@ -213,25 +238,25 @@
 
 
 
-              if (currentPlayer) {
-                game.systems.hexapod.setTarget(currentPlayer.position);
+            if (currentPlayer) {
+              game.systems.hexapod.setTarget(currentPlayer.position);
 
-                builder.meta({
-                  target: {
-                    x: currentPlayer.position.x,
-                    y: currentPlayer.position.y
-                  }
-                });
+              builder.meta({
+                target: {
+                  x: currentPlayer.position.x,
+                  y: currentPlayer.position.y
+                }
+              });
 
-              } else {
-                builder.meta({
-                  target: {
-                    x: entityData.meta.target.x,
-                    y: entityData.meta.target.y
-                  }
-                });
+            } else {
+              builder.meta({
+                target: {
+                  x: entityData.meta.target.x,
+                  y: entityData.meta.target.y
+                }
+              });
 
-              }
+            }
 
           }
 
@@ -251,6 +276,16 @@
             if (game.systems.hexapod) {
               game.systems.hexapod.setTarget(globalPosition);
             }
+
+            // TODO: make this a mantra helper
+            game.updateEntity(ent.id, {
+              meta: {
+                equippedItems: [{
+                  plugin: 'bullet',
+                  method: 'fireBullet'
+                }]
+              }
+            });
 
           }
 
@@ -344,17 +379,17 @@
         let actualItems = [];
         if (entity.items) {
           entity.items.forEach(item => {
-          let ent = game.getEntity(item);
-          console.log('exit item ent', ent)
-          if (ent) {
-            actualItems.push({
-            position: ent.position,
-            size: ent.size,
-            type: ent.type,
-            collectable: ent.collectable
+            let ent = game.getEntity(item);
+            console.log('exit item ent', ent)
+            if (ent) {
+              actualItems.push({
+                position: ent.position,
+                size: ent.size,
+                type: ent.type,
+                collectable: ent.collectable
+              });
+            }
           });
-          }
-        });
 
         }
 
@@ -403,18 +438,16 @@
 
       });
 
-
       game.use('Bullet'); // plugins at runtime
       // TODO: have boomerang work cross window ( needs dynamic target tracker like Hexapod )
       // game.use('Boomerang'); // plugins at runtime
+
+
 
       game.start(function () {
 
         // game.make().Block().Draggable().color('blue').size(32).createEntity();
         // Boomerang action should be left click for demo
-        game.config.mouseActionButton = 'LEFT';
-        game.config.mouseMovementButton = 'RIGHT';
-        //game.reset();
 
         game.setBackground('#000000');
 
@@ -430,6 +463,17 @@
             x: currentPlayer.position.x - window.screenX,
             y: currentPlayer.position.y - window.screenY
           };
+
+          // TODO: make this a mantra helper
+          game.updateEntity(currentPlayer.id, {
+            meta: {
+              equippedItems: [{
+                plugin: 'bullet',
+                method: 'fireBullet'
+              }]
+            }
+          });
+
           console.log('saving global', globalPosition);
           localStorage.setItem('mantra-currentPlayer', JSON.stringify(globalPosition));
           // update target
@@ -550,6 +594,37 @@
 
 
   </script>
+  <div id="openWindowButtons">
+    <button>Open Window</button>
+  </div>
+
+  <div class="main">
+
+    <div>
+      <h1>CrossWindow.js + Mantra.js</h1>
+    </div>
+    <div>
+      <a href="https://github.com/yantra-core/CrossWindow.js">Github Source</a>
+    </div>
+    <div class="switchExample">
+      <a href="/simple.html">Switch to Simple Example</a>
+    </div>
+
+    <div class="help">
+      <h3>Help</h3>
+      <p>Click the top-right button to open a new CrossWindow<br />
+        Each new CrossWindow will have its own Mantra.js game instance<br />
+        Move between windows by travelling to the edge of the screen<br />
+      </p>
+      <h3>Controls</h3>
+      <p>
+        WASD to move the player<br />
+        LEFT MOUSE TO MOVE - RIGHT MOUSE TO SHOOT<br />
+        USB GAMEPAD SUPPORTED
+      </p>
+    </div>
+
+  </div>
 
 </body>
 

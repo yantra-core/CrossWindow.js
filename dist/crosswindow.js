@@ -105,7 +105,6 @@ var _open = _interopRequireDefault(require("./open.js"));
 var _CommunicationManager = _interopRequireDefault(require("./CommunicationManager.js"));
 var _MetadataManager = _interopRequireDefault(require("./MetadataManager.js"));
 var _IntersectionDetector = _interopRequireDefault(require("./IntersectionDetector.js"));
-var _updateOrCreateDebugContainer = _interopRequireDefault(require("./updateOrCreateDebugContainer.js"));
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -116,8 +115,6 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
 // A class to manage communication and entity movement between multiple windows
 // Supports opening new windows, sending messages, and teleporting entities between windows
 // Also supports detecting and handling window intersections
-// The debug containers are optional, but useful for debugging so included with default package
-// These could could be separate bundle to further reduce size
 var CrossWindow = exports["default"] = /*#__PURE__*/function () {
   function CrossWindow(game) {
     var metadataKey = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'windowMetadata';
@@ -139,8 +136,8 @@ var CrossWindow = exports["default"] = /*#__PURE__*/function () {
     this.pollWindows = this.metadataManager.pollWindows.bind(this.metadataManager);
     this.postMessage = this.communicationManager.sendMessage.bind(this.communicationManager);
     this.registerWindow();
+    this.pollWindows();
     this.metadataManager.startHeartbeat();
-    this.updateOrCreateDebugContainer = _updateOrCreateDebugContainer["default"].bind(this);
   }
   _createClass(CrossWindow, [{
     key: "on",
@@ -184,7 +181,7 @@ var CrossWindow = exports["default"] = /*#__PURE__*/function () {
   return CrossWindow;
 }();
 
-},{"./CommunicationManager.js":2,"./IntersectionDetector.js":4,"./MetadataManager.js":5,"./getBestWindow.js":6,"./open.js":7,"./updateOrCreateDebugContainer.js":8}],4:[function(require,module,exports){
+},{"./CommunicationManager.js":2,"./IntersectionDetector.js":4,"./MetadataManager.js":5,"./getBestWindow.js":6,"./open.js":7}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -311,7 +308,15 @@ var MetadataManager = exports["default"] = /*#__PURE__*/function () {
   _createClass(MetadataManager, [{
     key: "getCurrentWindows",
     value: function getCurrentWindows() {
-      return this.currentWindows;
+      var _this = this;
+      var active = {};
+      // for each non-null currentWindows
+      Object.keys(this.currentWindows).forEach(function (windowId) {
+        if (_this.currentWindows[windowId]) {
+          active[windowId] = _this.currentWindows[windowId];
+        }
+      });
+      return active;
     }
   }, {
     key: "getWindows",
@@ -321,28 +326,28 @@ var MetadataManager = exports["default"] = /*#__PURE__*/function () {
   }, {
     key: "startHeartbeat",
     value: function startHeartbeat() {
-      var _this = this;
+      var _this2 = this;
       setInterval(function () {
-        _this.updateWindowMetadata(); // Update current window's metadata
-        _this.removeInactiveWindows(200); // milliseconds
+        _this2.updateWindowMetadata(); // Update current window's metadata
+        _this2.removeInactiveWindows(200); // milliseconds
       }, 200); // Update every 200ms
     }
   }, {
     key: "pollWindows",
     value: function pollWindows() {
-      var _this2 = this;
+      var _this3 = this;
       var prevMetadata = this.getWindows(); // Store the initial state of all windows.
 
       setInterval(function () {
-        var allWindows = _this2.getWindows(); // Fetch the current state of all windows.
+        var allWindows = _this3.getWindows(); // Fetch the current state of all windows.
 
         // Check for closed windows by comparing prevMetadata with the current state
         Object.keys(prevMetadata).forEach(function (windowId) {
-          if (windowId === _this2.windowId) return; // Skip the current window
+          if (windowId === _this3.windowId) return; // Skip the current window
           if (!allWindows.hasOwnProperty(windowId)) {
             // If a window in prevMetadata is not present in allWindows, it's been closed
             console.log('gone', windowId, prevMetadata[windowId]);
-            _this2.emit('windowClosed', {
+            _this3.emit('windowClosed', {
               windowId: windowId,
               metadata: prevMetadata[windowId]
             });
@@ -358,11 +363,11 @@ var MetadataManager = exports["default"] = /*#__PURE__*/function () {
           //if (!prevWindowMetadata || this.hasMetadataChanged(prevWindowMetadata, currentWindowMetadata)) {
           // Update the previous metadata state for the next iteration
           prevMetadata[windowId] = currentWindowMetadata;
-          _this2.currentWindows[windowId] = currentWindowMetadata;
+          _this3.currentWindows[windowId] = currentWindowMetadata;
           // Emit an event for the changed or new window
           // TODO: without the conditional statement this is now 'windowHeartbeat'
           // we should split the case and have two events to subscribe to
-          _this2.emit('windowChanged', {
+          _this3.emit('windowChanged', {
             windowId: windowId,
             metadata: currentWindowMetadata
           });
@@ -405,17 +410,19 @@ var MetadataManager = exports["default"] = /*#__PURE__*/function () {
   }, {
     key: "removeInactiveWindows",
     value: function removeInactiveWindows() {
-      var _this3 = this;
+      var _this4 = this;
       var timeout = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1000;
       var allWindowsMetadata = JSON.parse(localStorage.getItem(this.metadataKey)) || {};
       var currentTime = Date.now();
+      //console.log('removeInactiveWindows', allWindowsMetadata, currentTime, timeout)
       Object.entries(allWindowsMetadata).forEach(function (_ref) {
         var _ref2 = _slicedToArray(_ref, 2),
           windowId = _ref2[0],
           metadata = _ref2[1];
         if (currentTime - metadata.lastActive > timeout) {
+          console.log('removeInactiveWindows', windowId, metadata, currentTime, timeout);
           delete allWindowsMetadata[windowId];
-          _this3.currentWindows[windowId] = null;
+          _this4.currentWindows[windowId] = null;
         }
       });
       localStorage.setItem(this.metadataKey, JSON.stringify(allWindowsMetadata));
@@ -726,98 +733,6 @@ function open(url) {
   } else {
     console.error('Failed to open a new window. Please check browser popup settings.');
   }
-}
-
-},{}],8:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports["default"] = updateOrCreateDebugContainer;
-function updateOrCreateDebugContainer(currentWindowMetadata) {
-  var container = document.getElementById('windowsContainer');
-  var boxId = 'windowBox_' + currentWindowMetadata.windowId;
-  var windowBox = document.getElementById(boxId);
-  if (!windowBox) {
-    windowBox = document.createElement('div');
-    windowBox.id = boxId;
-    windowBox.style.textAlign = 'center';
-    windowBox.classList.add('debug-window-box'); // Use CSS class for styling
-
-    var windowIdSpan = document.createElement('span');
-    windowIdSpan.style.backgroundColor = '#fff';
-    windowIdSpan.style.height = '20px';
-    windowIdSpan.style.fontWeight = 'bold';
-    windowIdSpan.style.width = '100%';
-    windowIdSpan.style.color = 'black';
-    windowIdSpan.style.padding = '5px';
-    windowIdSpan.style.margin = '0';
-    if (currentWindowMetadata.windowId === this.windowId) {
-      // Highlight our own window
-      windowBox.style.borderColor = '#007fff';
-    }
-    windowIdSpan.textContent = currentWindowMetadata.windowId.split('-')[1];
-    windowBox.appendChild(windowIdSpan);
-    container.appendChild(windowBox);
-  }
-  var adjustedPosition = calculateAdjustedPosition(currentWindowMetadata);
-
-  //console.log(currentWindowMetadata.windowId, this.windowId) 
-  if (currentWindowMetadata.windowId === this.windowId) {
-    // center the box always its our own
-    //console.log("SEESESESESE")
-    adjustedPosition.x = window.innerWidth / 2 - 55;
-    adjustedPosition.y = window.innerHeight / 2 - adjustedPosition.height / 2 - 200;
-    //windowBox.style.transform = 'translate(-50%, -50%)';
-  }
-  windowBox.style.left = "".concat(adjustedPosition.x, "px");
-  windowBox.style.top = "".concat(adjustedPosition.y, "px");
-  updatePositionInfo(windowBox, adjustedPosition, currentWindowMetadata);
-}
-function calculateAdjustedPosition(currentWindowMetadata) {
-  var scaleFactor = 0.2; // Adjust scale factor as needed
-  var buffer = 16; // Buffer to avoid edge sticking
-  var viewportWidth = window.innerWidth;
-  var viewportHeight = window.innerHeight;
-  var _currentWindowMetadat = currentWindowMetadata.metadata.size,
-    width = _currentWindowMetadat.width,
-    height = _currentWindowMetadat.height;
-  width *= scaleFactor;
-  height *= scaleFactor;
-
-  // Calculate relative position
-  var x = currentWindowMetadata.metadata.position.x - window.screenX + width / 2;
-  var y = currentWindowMetadata.metadata.position.y - window.screenY + height / 2;
-
-  // Adjust to keep within viewport and apply buffer
-  x = Math.min(Math.max(x, buffer), viewportWidth - width - buffer);
-  y = Math.min(Math.max(y, buffer), viewportHeight - height - buffer);
-  return {
-    x: x,
-    y: y,
-    width: width,
-    height: height
-  };
-}
-function updatePositionInfo(windowBox, position, currentWindowMetadata) {
-  var positionInfoSpan = windowBox.querySelector('.position-info');
-  if (!positionInfoSpan) {
-    positionInfoSpan = document.createElement('span');
-    positionInfoSpan.className = 'position-info';
-    positionInfoSpan.style.textAlign = 'left';
-    windowBox.appendChild(positionInfoSpan);
-  }
-  var distance = calculateDistance(position, {
-    x: window.screenX,
-    y: window.screenY
-  });
-  positionInfoSpan.innerHTML = "X: ".concat(position.x.toFixed(0), "<br/>Y: ").concat(position.y.toFixed(0), "<br/>Dist: ").concat(Math.round(distance), "px");
-}
-function calculateDistance(point1, point2) {
-  var dx = point1.x - point2.x;
-  var dy = point1.y - point2.y;
-  return Math.sqrt(dx * dx + dy * dy);
 }
 
 },{}]},{},[1])(1)

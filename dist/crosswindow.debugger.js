@@ -34,12 +34,13 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
 // CrossWindowDebugger.js - Marak Squires 2024
 var CrossWindowDebugger = exports["default"] = /*#__PURE__*/function () {
   function CrossWindowDebugger(crossWindowInstance) {
+    var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
     _classCallCheck(this, CrossWindowDebugger);
     this.initUI();
     this.updateUI();
     this.crossWindowInstance = crossWindowInstance;
     // Define default styles for the debug window boxes
-    this.defaultWindowBoxStyle = {
+    this.defaultWindowBoxStyle = options.windowBoxStyle || {
       border: '2px solid white',
       backgroundColor: 'rgba(0, 0, 0, 0.5)',
       color: 'white',
@@ -135,9 +136,9 @@ var CrossWindowDebugger = exports["default"] = /*#__PURE__*/function () {
     value: function updateUI() {
       var _this = this;
       setInterval(function () {
-        var currentWindows = crosswindow.getCurrentWindows();
+        var currentWindows = _this.crossWindowInstance.getCurrentWindows();
         document.getElementById('crossWindowCountValue').innerText = Object.keys(currentWindows).length;
-        document.getElementById('crossWindowId').innerText = crosswindow.windowId.split('-')[1];
+        document.getElementById('crossWindowId').innerText = _this.crossWindowInstance.windowId.split('-')[1];
         document.getElementById('crossWindowPosition').innerText = "x: ".concat(window.screenX, ", y: ").concat(window.screenY);
 
         // for each window updateOrCreateDebugContainer
