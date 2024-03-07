@@ -43,7 +43,9 @@ https://github.com/yantra-core/CrossWindow.js/assets/70011/a2b4f208-1df8-4957-97
 
 This simple demo runs CrossWindows's built-in debugger, showing the positional metadata of each connected browser window in real-time. Make sure to click "Open Window".
 
-### Mantra.js Game Demo
+### Mantra.js Game Demo ( ALPHA )
+
+*This is an Alpha Game version! It won't be perfect...yet*
 
 [https://yantra.gg/crosswindow](https://yantra.gg/crosswindow)
 
