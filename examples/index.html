@@ -239,7 +239,7 @@
           let builder = game.make();
           // Entity Types as Builder Class
           let type = entityData.type;
-          console.log('building from remote', entityData);
+          // console.log('building from remote', entityData);
           type = type.toLowerCase();
           type = type.charAt(0).toUpperCase() + type.slice(1);
           //console.log('type', type, builder);
@@ -460,6 +460,7 @@
         // console.log('entity::exited::viewport', entityData);
 
         let bestWindow = crosswindow.getBestWindow(entityData);
+
         // console.log('found bestWindow', bestWindow, crosswindow.windowId);
         if (bestWindow) {
 
@@ -467,24 +468,21 @@
           //console.log('entryPositionentryPositionentryPosition')
           if (bestWindow.windowId === crosswindow.windowId) {
             // if the best window is the current window, then we don't need to send a message
-            // we can just remove the entity
+            // just update it's position with re-entry coordinates
             // console.log("game.setPosition", bestWindow, entityData.entryPosition)
-            game.setPosition(entity.id, bestWindow.entryPosition);
-            //game.removeEntity(entity.id);
+            let position = { ...bestWindow.entryPosition }; // Creating a copy to avoid modifying the original entryPosition
+            game.setPosition(entity.id, position);
             return;
           } else {
             // console.log('removing', entity.id)
             game.removeEntity(entity.id);
+            // console.log('Message sent to best window:', entityData, bestWindow);
             bestWindow.postMessage(entityData);
-            //console.log('Message sent to best window:', entityData, bestWindow);
-
           }
-
         } else {
           // console.log('no bestWindow', bestWindow)
+          // this should *not* happen with getBestWindow() default fallbacks
         }
-
-        // console.log('bestWindow', bestWindow)
 
       });
 

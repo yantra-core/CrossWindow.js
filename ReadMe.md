@@ -54,6 +54,11 @@ This more featured demo contains a Mantra.js game instance, a Player with arrows
 
 In this example, the `Mantra` event emitter bridges to the `CrossWindow` event emitter. Each time a Game Entity exits the viewport, Mantra.js emits an event that CrossWindow.js sends to the best available open window based on the entity's exit position.
 
+### Request Animation Loop Demo
+
+[https://yantra.gg/crosswindow/raf-loop](https://yantra.gg/crosswindow/raf-loop)
+
+see: `./examples/raf-loop.html` for code
 
 ## Installation
 
@@ -166,6 +171,72 @@ npm install crosswindow
   - [✅] `getBestWindow(screenPosition)` for calculating "best" window for screen position
   - [🟡]  Intersection events for overlapping windows ( WIP needs demo )
   - [❌]  Cardinal direction helpers for opening windows ( N,S,E,W )
+
+
+# Detecting if an element has left the Viewport
+
+CrossWindow.js makes few assumptions about your cross window applications.
+
+In order to track if a DOM element has left the viewport ( and perhaps needs to be sent to another window ), you will need to create a loop with a timer and framerate.
+
+You can use: `requestAnimationFrame`, `setTimeout`, or `setInterval` in order to poll the state of the DOM and emit events ( such as finding the best window or opening new windows ).
+
+see: [https://yantra.gg/crosswindow/raf-loop](https://yantra.gg/crosswindow/raf-loop)
+
+see: `./examples/raf-loop.html` for full working code
+
+```js
+function trackElementVisibilityRAF(elementId) {
+  function checkVisibility() {
+    const element = document.getElementById(elementId);
+    if (!element) {
+      requestAnimationFrame(checkVisibility); // Keep trying until found
+      return;
+    }
+
+    const rect = element.getBoundingClientRect();
+    const isVisible = rect.top < window.innerHeight && rect.bottom >= 0 && rect.left < window.innerWidth && rect.right >= 0;
+
+    if (!isVisible) {
+      console.log(`Element with ID '${elementId}' has left the viewport.`);
+      // Perform any actions needed when the element is out of the viewport
+      let bestWindow = crosswindow.getBestWindow({
+        position: {
+          x: rect.left,
+          y: rect.top
+        },
+        screenPosition: { // send the element to the right of the current window
+          x: window.screenX + window.outerWidth,
+          y: window.screenY
+        }
+      });
+
+      // Removes the element from current window
+      element.remove();
+
+      // sends element metadata to best window for processing
+      // listen to event with: currentwindow.on('message', fn);
+      bestWindow.postMessage({
+        id: elementId,
+        position: {
+          x: rect.left,
+          y: rect.top
+        }
+      });
+
+    }
+
+    requestAnimationFrame(checkVisibility); // Continue the loop
+  }
+
+  checkVisibility(); // Start the loop
+}
+
+trackElementVisibilityRAF('my-element');
+
+
+```
+
 
 ## Contributing
 
