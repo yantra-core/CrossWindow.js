@@ -78,10 +78,10 @@ npm install crosswindow
 <script>
   document.addEventListener('DOMContentLoaded', (event) => {
 
-    let crosswindow = new CW.CrossWindow();
+    let crosswindow = new CW.CrossWindow(window);
     let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow);
 
-    document.querySelectorAll('#openWindowButtons button').forEach(button => {
+    document.querySelectorAll('button').forEach(button => {
       button.addEventListener('click', () => {
         const windowWidth = window.innerWidth;
         const windowHeight = window.outerHeight - 75;
@@ -89,7 +89,7 @@ npm install crosswindow
         const left = window.screenY;
 
         // Open new CrossWindow
-        crosswindow.open('api.html', {
+        crosswindow.open('this-page-or-another-crosswindow-page.html', {
           width: windowWidth,
           height: windowHeight,
           top: top,
