@@ -2,7 +2,7 @@
 
 <h3 align="center">
 
-# CrossWindow.js
+  CrossWindow.js - Alpha
 
 </h3>
 
@@ -14,14 +14,13 @@
 
 
 
-A 22kb library for managing spatially aware cross-window browser messages. 
+A `22kb` library for managing spatially aware cross-window browser messages. 
 
 CrossWindow.js is used for building web applications that need to be aware of the positional data of other open browser windows. It's useful for building apps that need to teleport objects between browser windows.
 
 *image here*
 
-# IT CAN TELEPORT OBJECTS BETWEEN BROWSER WINDOWS
-
+## IT CAN TELEPORT STUFF BETWEEN BROWSER WINDOWS
 
 
 ## Video and Live Demos

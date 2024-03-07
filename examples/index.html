@@ -81,6 +81,7 @@
       background-color: rgba(255, 255, 255, 0.2);
       /* Change background on hover */
     }
+
     #openWindowButtons {
       position: absolute;
       bottom: 100px;
@@ -120,7 +121,7 @@
 
   <div id="openWindowButtons">
     <button>Open Window</button>
-   
+
   </div>
   <script>
     let crosswindow = new CW.CrossWindow();
@@ -267,6 +268,7 @@
           builder[type]();
           // builder.isSensor(false);
           //builder.size(64)
+          builder.health(entityData.health);
           builder.velocity(entityData.velocity.x, entityData.velocity.y);
           builder.rotation(entityData.rotation);
           builder.x(position.x).y(position.y);
@@ -277,12 +279,64 @@
             // remove all other players ( for now )
             game.removeEntitiesByType('PLAYER');
           }
+
+
+          if (builder.config.type === 'HEXAPOD') {
+
+            // see if there is a current player on mantra
+            let currentPlayer = game.getEntity(game.currentPlayerId);
+            console.log('CCCCC', currentPlayer)
+
+
+
+              if (currentPlayer) {
+                game.systems.hexapod.setTarget(currentPlayer.position);
+
+                builder.meta({
+                  target: {
+                    x: currentPlayer.position.x,
+                    y: currentPlayer.position.y
+                  }
+                });
+
+              } else {
+                builder.meta({
+                  target: {
+                    x: entityData.meta.target.x,
+                    y: entityData.meta.target.y
+                  }
+                });
+
+              }
+
+
+
+
+
+          }
+
           console.log("CREATING ENT", builder.config)
 
           let ent = builder.createEntity();
           if (ent.type === "PLAYER") {
             game.setPlayerId(ent.id);
+            let globalPosition = {
+              x: ent.position.x + window.screenX,
+              y: ent.position.y + window.screenY
+            };
+            console.log('saving global', globalPosition);
+            localStorage.setItem('mantra-currentPlayer', JSON.stringify(globalPosition));
+
+            // update target
+            if (game.systems.hexapod) {
+              game.systems.hexapod.setTarget(globalPosition);
+            }
+
           }
+
+
+
+
           remoteEntMap[source][entityData.id] = ent.id; // now we have a mapping of remoteId to localId
           //console.log('stored ref', ent.id, remoteEntMap[source][entityData.id])
         } else {
@@ -296,8 +350,10 @@
             localEnt.position = entityData.position;
             localEnt.rotation = entityData.rotation;
             localEnt.velocity = entityData.velocity;
+            localEnt.health = entityData.health;
             localEnt.position.x += 10;
             localEnt.position.y += 10;
+            localEnt.meta = entityData.meta || {};
 
             let windowWidth = window.innerWidth;
             let windowHeight = window.innerHeight;
@@ -369,10 +425,12 @@
         let entityData = {
           id: entity.id,
           type: entity.type,
+          health: entity.health,
           position: entity.position,
           rotation: entity.rotation,
           velocity: entity.velocity,
           rotation: entity.rotation,
+          meta: entity.meta,
           screenPosition: entity.screenPosition
         };
 
@@ -426,13 +484,29 @@
         // if not, create player
         let isSubWindow = window.location.search.includes('win');
         if (!isSubWindow) {
-          game.make().Player().createEntity();
+          let currentPlayer = game.make().Player().createEntity();
+          // set currentPlayer in localStorage so Hexapods can track it cross window
+          let globalPosition = {
+            x: currentPlayer.position.x + window.screenX,
+            y: currentPlayer.position.y + window.screenY
+          };
+          console.log('saving global', globalPosition);
+          localStorage.setItem('mantra-currentPlayer', JSON.stringify(globalPosition));
+          // update target
+          if (game.systems.hexapod) {
+            game.systems.hexapod.setTarget(globalPosition);
+          }
+
+        } else {
+
+          game.make().Hexapod({
+            target: JSON.parse(localStorage.getItem('mantra-currentPlayer'))
+          }).repeat(6).createEntity();
         }
 
         // alert(Object.keys(currentWindows).length)
         if (Object.keys(currentWindows).length <= 1) {
         } else {
-          //         game.make().Hexapod().repeat(11).createEntity();
           //game.make().Tower().color('red').angle(270).position(-32, 0).createEntity();
           //game.make().Tower().color('orange').angle(0).position(0, -32).createEntity();
 
