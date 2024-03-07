@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+
+
+<head>
+  <title>CrossWindow.js Demo</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://yantra.gg/labyrinthos/browser/vendor/jquery.min.js"></script>
+  <meta name="description" content="A JavaScript procedural generator for Mazes, Terrains, and Biomes">
+  <script src="./crosswindow.js"></script>
+
+
+  <style>
+    .debug-window-box {
+      border: 2px solid white;
+      background-color: black;
+      /* spotted line border */
+      border-style: dashed;
+      border-width: 6px;
+      border-color: yellow;
+      color: white;
+      font-size: 20px;
+      position: absolute;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 8px;
+      z-index: 11111;
+    }
+
+    .position-info {
+      margin-top: 8px;
+      text-align: left;
+      z-index: 11111;
+
+    }
+
+    #windowsContainer {
+      /* background-color: aqua; */
+      z-index: 8888;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      /* opacity: 0.3; */
+    }
+
+    .main {
+      position: relative;
+      /* Makes .main the reference for absolutely positioned children */
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    button {
+      position: absolute;
+      /* Position buttons absolutely within .main */
+      padding: 20px;
+      font-size: 24px;
+      cursor: pointer;
+      z-index: 9999;
+    }
+
+    button[data-direction="N"] {
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    button[data-direction="NE"] {
+      top: 0;
+      right: 0;
+    }
+
+    button[data-direction="E"] {
+      top: 50%;
+      right: 0;
+      transform: translateY(-50%);
+    }
+
+    button[data-direction="SE"] {
+      bottom: 0;
+      right: 0;
+    }
+
+    button[data-direction="S"] {
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    button[data-direction="SW"] {
+      bottom: 0;
+      left: 0;
+    }
+
+    button[data-direction="W"] {
+      top: 50%;
+      left: 0;
+      transform: translateY(-50%);
+    }
+
+    button[data-direction="NW"] {
+      top: 0;
+      left: 0;
+    }
+
+    /* adds response query for width and button size */
+    @media (max-width: 600px) {
+      button {
+        padding: 10px;
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="directionButtons">
+
+    <button data-direction="NW">↖ NW</button>
+    <button data-direction="N">↑ N</button>
+    <button data-direction="NE">↗ NE</button>
+    <button data-direction="E">→ E</button>
+    <button data-direction="SE">↘ SE</button>
+    <button data-direction="S">↓ S</button>
+    <button data-direction="SW">↙ SW</button>
+    <button data-direction="W">← W</button>
+  </div>
+  <script>
+    let crosswindow = new CW.CrossWindow();
+
+    document.querySelectorAll('#directionButtons button').forEach(button => {
+      button.addEventListener('click', function () {
+        const direction = this.getAttribute('data-direction');
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        const offsetX = window.screenX; // Current window's distance from the left edge of the screen
+        const offsetY = window.screenY; // Current window's distance from the top edge of the screen
+        let buffer = 10; // Define a buffer distance for the new window
+        let top = offsetY, left = offsetX;
+
+        switch (direction) {
+          case 'N':  // WORKING
+            top = offsetY - windowHeight - buffer;
+            left = offsetX - windowWidth;
+            break;
+          case 'NE': // WORKING
+            top = offsetY - windowHeight - buffer;
+            left = offsetX;
+            break;
+          case 'E': // WORKING
+            top = offsetY;
+            left = offsetX + buffer + windowWidth / 2; // Align E window with the right edge of the current window
+            break;
+          case 'SE':
+            top = offsetY + windowHeight + buffer;
+            left = offsetX; // Align SE window with the E edge of the current window
+            break;
+          case 'S': // WORKING
+            top = offsetY + windowHeight + buffer;
+            left = offsetX - windowWidth; // Align S window with the bottom edge, offset to the left
+            break;
+          case 'SW':
+            top = offsetY + windowHeight + buffer;
+            left = offsetX - windowWidth * 2 - buffer; // Align SW window to the left of the S window
+            break;
+          case 'W': // WORKING
+            top = offsetY;
+            left = offsetX - buffer - windowWidth; // Align E window with the right edge of the current window
+            break;
+          case 'NW':
+            top = offsetY - windowHeight - buffer;
+            left = offsetX - windowWidth * 2 - buffer; // Align NW window above and to the left, similar to W and N
+            break;
+        }
+
+        console.log('top', top, 'left', left);
+
+        // Open new window with calculated top and left positions
+        crosswindow.open('simple.html?win', {
+          width: windowWidth,
+          height: windowHeight,
+          top: top,
+          left: left,
+        }, true);
+      });
+    });
+
+
+    document.addEventListener('DOMContentLoaded', (event) => {
+
+      crosswindow.on('windowClosed', function (currentWindowMetadata) {
+        // remove the window preview if exists
+        let windowBox = document.getElementById('windowBox_' + currentWindowMetadata.windowId);
+        if (windowBox) {
+          windowBox.remove();
+        }
+      });
+
+      // TODO: move this debugger window code into library
+      crosswindow.on('windowChanged', function (currentWindowMetadata) {
+        // console.log('windowChanged', currentWindowMetadata);
+
+
+        if (currentWindowMetadata.windowId === crosswindow.windowId) {
+          // do not create a box for the current window
+          // return;
+        }
+
+        crosswindow.updateOrCreateDebugContainer(currentWindowMetadata);
+
+      });
+
+      crosswindow.pollWindows();
+
+      crosswindow.on('message', function (event) {
+        console.log('message', event);
+      });
+
+      // this will render the current window box *once* immediately on load
+      // TODO: move to lib
+      crosswindow.emit('windowChanged', {
+        windowId: crosswindow.windowId,
+        metadata: {
+          position: {
+            x: window.screenX,
+            y: window.screenY
+          },
+          size: {
+            width: window.innerWidth,
+            height: window.innerHeight
+          }
+        }
+      });
+
+    });
+
+
+  </script>
+  <!-- Container where remote window boxes will be displayed -->
+  <div id="windowsContainer" style="position: absolute;"></div>
+
+</body>
+
+</html>
