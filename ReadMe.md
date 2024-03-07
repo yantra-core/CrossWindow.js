@@ -52,7 +52,7 @@ https://github.com/yantra-core/CrossWindow.js/assets/70011/a2b4f208-1df8-4957-97
 
 This more featured demo contains a Mantra.js game instance, a Player with arrows, and some NPCS. Try opening a window and shooting some arrows.
 
-In this example, the Mantra.js event emitter bridges to the `CrossWindow` event emitter. Each time a Game Entity exits the viewport, Mantra emits an event that CrossWindow.js sends to the best available open window based on the entity's exit position.
+In this example, the `Mantra` event emitter bridges to the `CrossWindow` event emitter. Each time a Game Entity exits the viewport, Mantra.js emits an event that CrossWindow.js sends to the best available open window based on the entity's exit position.
 
 
 ## Installation
@@ -134,7 +134,7 @@ npm install crosswindow
           x: 100,
           y: 100
         },
-        message: 'Hello from the main window'
+        message: 'Hello from ' + crosswindow.windowId
       })
 
     }, 1000);
