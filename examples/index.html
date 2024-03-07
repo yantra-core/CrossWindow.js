@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
 
-
 <head>
   <title>CrossWindow.js Demo</title>
   <meta charset="UTF-8">
@@ -83,7 +82,11 @@
   <script>
     let crosswindow = new CW.CrossWindow();
     // optionally we can run the debugger to show the window grid
-    // let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow);
+    let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow, {
+      showOtherWindows: false,
+      showWindowLegend: false,
+      showWindowCount: true
+    });
 
     function isTouchDevice() {
       return 'ontouchstart' in window || navigator.maxTouchPoints;
@@ -122,7 +125,9 @@
         plugins: ['Player', 'Draggable', 'Hexapod', 'Tower', 'RBush', 'Key', 'Block', 'Collectable', 'Teleporter', 'Gamepad', 'Bullet'],
         width: 400,
         height: 300,
-        warnNonYantraGameRoot: false
+        warnNonYantraGameRoot: true,
+        disableContextMenu: false,
+        gameRoot: 'http://192.168.1.80:7777'
       });
 
       game.config.emitKeyboardInputsEvents = true;
@@ -134,6 +139,9 @@
       // Actions with left click
       game.config.mouseActionButton = 'RIGHT';
 
+      game.use('Bullet'); // plugins at runtime
+      // TODO: have boomerang work cross window ( needs dynamic target tracker like Hexapod )
+      // game.use('Boomerang'); // plugins at runtime
 
       let remoteEntMap = {};
 
@@ -147,6 +155,13 @@
           data = event.payload;
         }
 
+        //
+        // Code for capturing and re-broadcasting inputs over broadcast channel
+        // Perhaps we can create a new CommunicationClient in Mantra that handles this?
+        // We shouldn't need to bypass the input system by directly emitting the key events like this
+        // We should be able to utilize the pre-existing input pool in mantra and treat broadcastchannel..
+        // just like it was a remote server without the authorative server part
+        //
         // TODO: we'll move most of this logic into a Mantra CrossWindow plugin
         // Remark: There is common code pattern here to our server-side spatial zones and IPC zones
         if (action === 'inputs') {
@@ -173,11 +188,27 @@
 
           return;
         }
+        //
+        // Ends code for capturing inputs and rebroadcasting them to Mantra 
+        //
 
+
+        //
+        // Handles case when windows are intersecting / overlapping
+        //
         if (action === 'intersecting') {
           handleIntersection(event);
           return;
         }
+        //
+        // End of handling intersecting windows
+        //
+
+
+        //
+        // Default action case 'sendMessage' ( needs rename as its app specific, not crossWindow ) 
+        // This will create the ent, TODO: move to Mantra as generic re-inflate from remote node code
+
         //  game.flashMessage(action);
         let source = event.sourceWindowId;
         remoteEntMap[source] = remoteEntMap[source] || {};
@@ -198,10 +229,15 @@
           let builder = game.make();
           // Entity Types as Builder Class
           let type = entityData.type;
+          console.log('building from remote', entityData);
           type = type.toLowerCase();
           type = type.charAt(0).toUpperCase() + type.slice(1);
           //console.log('type', type, builder);
-          builder[type]();
+          try {
+            builder[type]();
+          } catch (err) {
+            console.warn('Warning: Builder tried to build unknown type', type, 'using default type', err);
+          }
           // builder.isSensor(false);
           //builder.size(64)
           builder.health(entityData.health);
@@ -288,9 +324,9 @@
           remoteEntMap[source][entityData.id] = ent.id; // now we have a mapping of remoteId to localId
           //console.log('stored ref', ent.id, remoteEntMap[source][entityData.id])
         } else {
-          // the local node has seen this ent from the remote node
-          // so we need to update it
-          // get the local ent
+          //
+          // Entity has been seen locally before, update it, most likely overlapping windows / dual entity case
+          //
           let localId = remoteEntMap[source][entityData.id];
           let localEnt = game.getEntity(localId);
           if (localEnt) {
@@ -324,9 +360,15 @@
           }
         }
 
+        //
+        // Ends the default create or update entity logic
+        //
+
       });
 
+
       // this will render the current window box *once* immediately on load
+      // Remark: Can we now remove this? Debugger should do this automatically
       crosswindow.emit('windowChanged', {
         windowId: crosswindow.windowId,
         metadata: {
@@ -370,7 +412,9 @@
         }
       });
 
-      // listen to the Mantra event for when entity leaves the viewport
+      //
+      // Listen to the Mantra event for when entity leaves the viewport
+      //
       game.on('entity::exited::viewport', function (entity) {
         let actualItems = [];
         if (entity.items) {
@@ -434,12 +478,9 @@
 
       });
 
-      game.use('Bullet'); // plugins at runtime
-      // TODO: have boomerang work cross window ( needs dynamic target tracker like Hexapod )
-      // game.use('Boomerang'); // plugins at runtime
-
-
-
+      //
+      // All the cross winder events are listening, start the mantra game
+      //
       game.start(function () {
 
         // game.make().Block().Draggable().color('blue').size(32).createEntity();
@@ -505,10 +546,12 @@
 
       });
 
-
     });
 
-
+    //
+    // Logic for handling intersection / overlappng events
+    //
+    // TODO: move this to a Mantra CrossWindow plugin
     function handleIntersection(event) {
       console.log('intersecting', event);
 

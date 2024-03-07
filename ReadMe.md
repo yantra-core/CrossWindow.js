@@ -72,7 +72,12 @@ npm install crosswindow
   document.addEventListener('DOMContentLoaded', (event) => {
 
     let crosswindow = new CW.CrossWindow(window);
-    let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow);
+
+    let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow, {
+      showOtherWindows: true,
+      showWindowLegend: true,
+      showWindowCount: true
+    });
 
     document.querySelectorAll('button').forEach(button => {
       button.addEventListener('click', () => {
@@ -122,6 +127,9 @@ npm install crosswindow
 
       // use BroadcastChannel postMessage to send a message to the best window
       bestWindow.postMessage({
+        name: 'Bobby',
+        health: 99,
+        team: 'Discovery Channel',
         position: {
           x: 100,
           y: 100
