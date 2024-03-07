@@ -15,172 +15,125 @@
   <style>
     .debug-window-box {
       border: 2px solid white;
-      background-color: rgba(0, 0, 0, 0.1);
+      background-color: rgba(0, 0, 0, 0.5);
+      /* Slightly darker background for better contrast */
       color: white;
-      font-size: 20px;
+      font-size: 1rem;
+      /* Responsive font size */
       position: absolute;
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      /* padding: 8px; */
-      padding-left: 5px;
-      padding-right: 5px;
+      padding: 0.5em;
+      /* Consistent padding */
+      border-radius: 8px;
+      /* Rounded corners */
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      /* Subtle shadow */
       z-index: 11111;
+      transition: transform 0.2s;
+      /* Smooth transition for hover effect */
     }
 
-    .position-info {
-      margin-top: 8px;
-      text-align: left;
-      z-index: 11111;
+    .debug-window-box:hover {}
 
+    .position-info {
+      margin-top: 0.5em;
+      text-align: left;
     }
 
     #windowsContainer {
-      /* background-color: aqua; */
-      z-index: 8888;
+      z-index: 22222;
       position: absolute;
+      background: transparent;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      /* opacity: 0.3; */
+      pointer-events: none;
+      /* Ignore pointer events */
     }
 
     .main {
       position: relative;
-      /* Makes .main the reference for absolutely positioned children */
       width: 100vw;
       height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      text-align: center;
     }
 
     button {
       position: absolute;
-      /* Position buttons absolutely within .main */
-      padding: 20px;
-      font-size: 24px;
+      padding: 0.1em;
+      font-size: 1.5em;
+      height: 3em;
+      /* Responsive font size */
       cursor: pointer;
       z-index: 9999;
+      transition: background-color 0.2s;
+      /* Smooth transition for hover effect */
     }
 
-    button[data-direction="N"] {
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
+    button:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+      /* Change background on hover */
+    }
+    #openWindowButtons {
+      position: absolute;
+      bottom: 100px;
+      right: 130px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5em;
+      padding: 0.5em;
+      background-color: rgba(0, 0, 0, 0.5);
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
     }
 
-    button[data-direction="NE"] {
-      top: 0;
-      right: 0;
+    /* at bottom right of screen */
+    #crossWindowCount {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      z-index: 9999;
+      padding: 0.5em;
+      background-color: white;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
     }
 
-    button[data-direction="E"] {
-      top: 50%;
-      right: 0;
-      transform: translateY(-50%);
-    }
-
-    button[data-direction="SE"] {
-      bottom: 0;
-      right: 0;
-    }
-
-    button[data-direction="S"] {
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-    }
-
-    button[data-direction="SW"] {
-      bottom: 0;
-      left: 0;
-    }
-
-    button[data-direction="W"] {
-      top: 50%;
-      left: 0;
-      transform: translateY(-50%);
-    }
-
-    button[data-direction="NW"] {
-      top: 0;
-      left: 0;
-    }
-
-    /* adds response query for width and button size */
     @media (max-width: 600px) {
       button {
-        padding: 10px;
-        font-size: 12px;
+        padding: 0.5em;
+        font-size: 0.75em;
+        /* Smaller font size for small screens */
       }
     }
   </style>
 </head>
 
 <body>
-  <div id="directionButtons">
 
-    <button data-direction="NW">↖ NW</button>
-    <button data-direction="N">↑ N</button>
-    <button data-direction="NE">↗ NE</button>
-    <button data-direction="E">→ E</button>
-    <button data-direction="SE">↘ SE</button>
-    <button data-direction="S">↓ S</button>
-    <button data-direction="SW">↙ SW</button>
-    <button data-direction="W">← W</button>
+  <div id="openWindowButtons">
+    <button>Open Window</button>
+   
   </div>
   <script>
     let crosswindow = new CW.CrossWindow();
 
-    document.querySelectorAll('#directionButtons button').forEach(button => {
+    document.querySelectorAll('#openWindowButtons button').forEach(button => {
       button.addEventListener('click', function () {
         const direction = this.getAttribute('data-direction');
         const windowWidth = window.innerWidth;
-        const windowHeight = window.innerHeight;
+        const windowHeight = window.outerHeight - 75;
         const offsetX = window.screenX; // Current window's distance from the left edge of the screen
         const offsetY = window.screenY; // Current window's distance from the top edge of the screen
         let buffer = 10; // Define a buffer distance for the new window
         let top = offsetY, left = offsetX;
-
-        switch (direction) {
-          case 'N':  // WORKING
-            top = offsetY - windowHeight - buffer;
-            left = offsetX - windowWidth;
-            break;
-          case 'NE': // WORKING
-            top = offsetY - windowHeight - buffer;
-            left = offsetX;
-            break;
-          case 'E': // WORKING
-            top = offsetY;
-            left = offsetX + buffer + windowWidth / 2; // Align E window with the right edge of the current window
-            break;
-          case 'SE':
-            top = offsetY + windowHeight + buffer;
-            left = offsetX; // Align SE window with the E edge of the current window
-            break;
-          case 'S': // WORKING
-            top = offsetY + windowHeight + buffer;
-            left = offsetX - windowWidth; // Align S window with the bottom edge, offset to the left
-            break;
-          case 'SW':
-            top = offsetY + windowHeight + buffer;
-            left = offsetX - windowWidth * 2 - buffer; // Align SW window to the left of the S window
-            break;
-          case 'W': // WORKING
-            top = offsetY;
-            left = offsetX - buffer - windowWidth; // Align E window with the right edge of the current window
-            break;
-          case 'NW':
-            top = offsetY - windowHeight - buffer;
-            left = offsetX - windowWidth * 2 - buffer; // Align NW window above and to the left, similar to W and N
-            break;
-        }
 
         console.log('top', top, 'left', left);
 
@@ -188,15 +141,13 @@
         crosswindow.open('index.html?win', {
           width: windowWidth,
           height: windowHeight,
-          top: top,
-          left: left,
+          top: top /*- window.outerHeight*/,
+          left: left + window.outerWidth,
         }, true);
       });
     });
 
-
     document.addEventListener('DOMContentLoaded', (event) => {
-
       let game = new MANTRA.Game({
         graphics: ['css'], // array enum, 'babylon', 'css', 'three'
         // Plugins at construction
@@ -233,15 +184,19 @@
       // TODO: move this debugger window code into library
       crosswindow.on('windowChanged', function (currentWindowMetadata) {
         // console.log('windowChanged', currentWindowMetadata);
-
-
+        // update the crossWindowCount
+        // get the el
+        let currentWindows = crosswindow.getCurrentWindows();
+        // console.log('currentWindows', currentWindows)
+        if (currentWindows) {
+          crossWindowCountValue.innerText = Object.keys(currentWindows).length;
+        }
         if (currentWindowMetadata.windowId === crosswindow.windowId) {
           // do not create a box for the current window
           // return;
         }
-
+        // Built-in Debugger
         crosswindow.updateOrCreateDebugContainer(currentWindowMetadata);
-
       });
 
       crosswindow.pollWindows();
@@ -603,6 +558,7 @@ type: 'info'
   </script>
   <!-- Container where remote window boxes will be displayed -->
   <div id="windowsContainer" style="position: absolute;"></div>
+  <div id="crossWindowCount">CrossWindows: <span id="crossWindowCountValue">0</span></div>
 
 </body>
 
