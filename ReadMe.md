@@ -18,7 +18,7 @@
 </h4>
 
 
-A `22kb` utility library for cross-window communication using [LocalStorage](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage) and [BroadcastChannel](https://developer.mozilla.org/en-US/docs/Web/API/BroadcastChannel). 
+A `22kb` utility library for cross-window communication using LocalStorage and BroadcastChannel. 
 
 CrossWindow.js is used for building web applications that need to be aware of the positional data of other open browser windows. It's useful for building apps that need to teleport objects between open windows.
 
@@ -152,8 +152,8 @@ npm install crosswindow
 
 # How
 
-  - Window Discovery and metadata handled by Local Storage
-  - Message broadcasting handled by Broadcast Channel
+  - Window Discovery and metadata handled by [LocalStorage](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage)
+  - Message broadcasting handled by [BroadcastChannel](https://developer.mozilla.org/en-US/docs/Web/API/BroadcastChannel)
   - Light touch of Javascript
 
 # Features
@@ -170,7 +170,7 @@ If anyone wishes to add TypeScript defs for the project, please open a PR and we
 
 #### Unit Tests
 
-CrossWindow.js is currently short on tests. We'll want to add tests.
+CrossWindow.js is currently short on tests. We'll want to add tests. `tap` or `tape` are great.
 
 
 # Copyright Yantra Works 2024 AGPL

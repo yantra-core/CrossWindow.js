@@ -32,11 +32,10 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : String(i); }
 function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 var CommunicationManager = exports["default"] = /*#__PURE__*/function () {
-  function CommunicationManager(channel, cw, game, metadataManager) {
+  function CommunicationManager(channel, cw, notUsed, metadataManager) {
     _classCallCheck(this, CommunicationManager);
     this.channel = channel;
     this.windowId = cw.windowId;
-    this.game = game;
     this.cw = cw;
     this.metadataManager = metadataManager;
     this.setupListeners();
@@ -119,14 +118,11 @@ var CrossWindow = exports["default"] = /*#__PURE__*/function () {
   function CrossWindow(game) {
     var metadataKey = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'windowMetadata';
     _classCallCheck(this, CrossWindow);
-    this.game = game;
     this.metadataKey = metadataKey;
     this.events = {};
     this.windowId = "".concat(Date.now(), "-").concat(Math.random().toString(36).substr(2, 9));
     this.metadataManager = new _MetadataManager["default"](metadataKey, this);
-    this.communicationManager = new _CommunicationManager["default"](new BroadcastChannel('crosswindow_channel'), this, game, this.metadataManager);
-    //this.on = this.communicationManager.on.bind(this.communicationManager);
-    //this.emit = this.communicationManager.emit.bind(this.communicationManager);
+    this.communicationManager = new _CommunicationManager["default"](new BroadcastChannel('crosswindow_channel'), this, null, this.metadataManager);
     this.intersectionDetector = new _IntersectionDetector["default"](this.metadataManager, this.windowId);
     this.open = _open["default"].bind(this);
     this.getBestWindow = _getBestWindow["default"].bind(this);
