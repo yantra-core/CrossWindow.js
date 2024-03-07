@@ -91,7 +91,7 @@ npm install crosswindow
           width: windowWidth,
           height: windowHeight,
           top: top,
-          left: left + window.outerWidth,
+          left: left + window.outerWidth, // opens to the right
         }, true);
 
       });
@@ -112,12 +112,12 @@ npm install crosswindow
     setInterval(function () {
       let bestWindow = crosswindow.getBestWindow({
         // the current position we are at in the current window
-        position: {
+        position: { // currentViewportPosition
           x: 100,
           y: 100
         },
         // any position on or off the screen, using screenX and screenY as the reference
-        screenPosition: {
+        screenPosition: { // requested screen position
           x: 1000,
           y: 1000
         }
@@ -127,10 +127,14 @@ npm install crosswindow
 
       // use BroadcastChannel postMessage to send a message to the best window
       bestWindow.postMessage({
+        // this is all arbitrary metadata
         name: 'Bobby',
         health: 99,
         team: 'Discovery Channel',
-        position: {
+        // Inside our crosswindow.on('message', fn) handler we can add custom logic,
+        // for determining what to do with the data, such as creating a new entity.
+        // The Mantra demo uses previous position to determine entrance position
+        previousPosition: {
           x: 100,
           y: 100
         },
@@ -160,7 +164,8 @@ npm install crosswindow
 
   - [✅] Opens and manages browser with Cross Window communications
   - [✅] `getBestWindow(screenPosition)` for calculating "best" window for screen position
-  - [✅]  Intersection events for overlapping windows ( WIP needs demo )
+  - [🟡]  Intersection events for overlapping windows ( WIP needs demo )
+  - [❌]  Cardinal direction helpers for opening windows ( N,S,E,W )
 
 ## Contributing
 

@@ -36,8 +36,14 @@
 </head>
 
 <body>
+  <!--
+
   <script src="http://yantra.gg/crosswindow.js"></script>
   <script src="http://yantra.gg/crosswindow.debugger.js"></script>
+  -->
+  <script src="/crosswindow.js"></script>
+  <script src="/crosswindow.debugger.js"></script>
+
   <script>
     document.addEventListener('DOMContentLoaded', (event) => {
 
@@ -62,6 +68,13 @@
         });
       });
 
+      
+
+      crosswindow.on('windowOpened', function (currentWindowMetadata) {
+        console.log('windowOpened', currentWindowMetadata);
+      });
+
+
       crosswindow.on('windowClosed', function (currentWindowMetadata) {
         console.log('windowClosed', currentWindowMetadata);
       });
@@ -71,7 +84,7 @@
       });
 
       crosswindow.on('message', function (event) {
-        console.log('message', event);
+        // console.log('message', event);
       });
 
       setInterval(function () {
@@ -88,7 +101,7 @@
           }
         });
 
-        console.log('bestWindow', bestWindow)
+        // console.log('bestWindow', bestWindow)
 
         // use BroadcastChannel postMessage to send a message to the best window
         bestWindow.postMessage({

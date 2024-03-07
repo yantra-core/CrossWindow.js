@@ -30,6 +30,10 @@
       color: white
     }
 
+    .links div {
+      padding: 0.4em;
+    }
+
     .help {
       /* should appear at the bottom 30% of screen */
       position: relative;
@@ -71,7 +75,7 @@
     .switchExample a {
       z-index: 9999;
       padding: 0.5em;
-      font-size: 0.8em;
+      font-size: 1em;
     }
 
   </style>
@@ -98,6 +102,12 @@
         alert('Please note CrossWindow multi-window demo is not optimized for touch devices.');
       }
       
+      // when click helpLabel toggle background visibility
+      document.querySelector('.helpLabel').addEventListener('click', function () {
+        let main = document.querySelector('.main');
+        main.style.display = 'none';
+      });
+
       document.querySelectorAll('#openWindowButtons button').forEach(button => {
         button.addEventListener('click', function () {
           const windowWidth = window.innerWidth;
@@ -642,15 +652,24 @@
     <div>
       <h1>CrossWindow.js + Mantra.js</h1>
     </div>
-    <div>
-      <a href="https://github.com/yantra-core/CrossWindow.js">Github Source</a>
+    <div class="links">
+      <div>
+        <a href="https://github.com/yantra-core/CrossWindow.js">Github Source</a>
+      </div>
+      <div class="switchExample">
+        <a href="https://yantra.gg/crosswindow/simple">Switch to Simple Example</a>
+      </div>
+  
     </div>
-    <div class="switchExample">
-      <a href="https://yantra.gg/crosswindow/simple">Switch to Simple Example</a>
-    </div>
-
     <div class="help">
-      <h3>Help</h3>
+  
+      <h3>
+        
+        <label class="helpLabel" for="hideHelp" title="Hides helper text">Help
+          <input type="checkbox" id="hideHelp" checked />
+        </label> 
+  
+      </h3>
       <p>Click the top-right button to open a new CrossWindow<br />
         Each new CrossWindow will have its own Mantra.js game instance<br />
         Move between windows by travelling to the edge of the screen<br />
