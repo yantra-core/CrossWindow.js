@@ -14,15 +14,26 @@
 
 
 
-A 22kb library for managing spatially aware cross-window browser messages. CrossWindow.js is used for building web applications that need to be aware of the positional data of other open browser windows. It's useful for building apps that need to teleport objects between browser windows.
+A 22kb library for managing spatially aware cross-window browser messages. 
+
+CrossWindow.js is used for building web applications that need to be aware of the positional data of other open browser windows. It's useful for building apps that need to teleport objects between browser windows.
+
+*image here*
+
+**IT CAN TELEPORT OBJECTS BETWEEN BROWSER WINDOWS**
+
+
 
 ## Video and Live Demos
 
 To see how this works, watch this demo video: 
 
+*video here*
+
+
 Here we have a Mantra.js game instance event emitter bridged to the events emitted from `CrossWindow`. Each time a Game Entity exits the viewport, CrossWindow.js is used to send a message containing the Player data to the best available window.
 
-**Try it out yourself**
+## Try it out yourself
 
 Here are two demos try:
 
@@ -38,7 +49,9 @@ This simple demo runs CrossWindows's built-in debugger, showing the positional m
 
 This more featured demo contains a Mantra.js game instance, a Player with arrows, and some NPCS. Try opening a window and shooting some arrows.
 
+```html
 <a name="install"></a>
+```
 
 ## Installation
 
