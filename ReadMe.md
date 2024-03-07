@@ -3,7 +3,11 @@
   CrossWindow.js - Alpha
   
 ![cross-window-debugger](https://github.com/yantra-core/CrossWindow.js/assets/70011/6b851631-d4cd-419d-897e-3153d3bf1fb0)
-![cross-window-mantra](https://github.com/yantra-core/CrossWindow.js/assets/70011/8de99b33-ff63-487c-866e-99b85a02227d)
+
+
+![cross-window-mantra-3](https://github.com/yantra-core/CrossWindow.js/assets/70011/d243d930-f098-4b2e-9136-89ea1bbbc000)
+
+
 
 </h3>
 
@@ -28,7 +32,9 @@ To see how this works, watch this demo video:
 
 
 
-https://github.com/yantra-core/CrossWindow.js/assets/70011/bb550768-1c4d-44d4-a4c1-adf7cfe76572
+
+https://github.com/yantra-core/CrossWindow.js/assets/70011/a2b4f208-1df8-4957-970e-333296a45a0c
+
 
 
 https://github.com/yantra-core/CrossWindow.js/assets/70011/55946c29-6ec6-4202-a3a9-42a3408237a8
