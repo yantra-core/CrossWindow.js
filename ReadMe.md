@@ -17,9 +17,9 @@
 </h4>
 
 
-A `22kb` utility library for cross-window communication using LocalStorage and BroadcastChannel. 
+A `22kb` utility library for cross-window communication using BroadcastChannel for messaging and LocalStorage for discovery.
 
-CrossWindow.js is used for building web applications that need to be aware of the positional data of other open browser windows. It's useful for building apps that need to teleport objects between open windows.
+You can use CrossWindow.js to build applications that need to be aware of the positional metadata of other open browser windows. CrossWindow allows you to send spatially aware data messages to the "best" available window.
 
 **CDN Release Latest**
 | Files          | CDN                                         | Size |
