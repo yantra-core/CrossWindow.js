@@ -172,9 +172,10 @@ npm install crosswindow
 
   - [✅] Opens and manages browser with Cross Window communications
   - [✅] `getBestWindow(screenPosition)` for calculating "best" window for screen position
-  - [✅]  Rebroadcasts keyboard and mouse events to windows
+  - [✅]  Optionally re-broadcast keyboard and mouse events to windows
   - [🟡]  Intersection events for overlapping windows ( WIP needs demo )
   - [❌]  Cardinal direction helpers for opening windows ( N,S,E,W )
+  - [❌]  Advanced windowing layouts ( cascade / tile / grid / etc )
 
 
 # Detecting if an element has left the Viewport
