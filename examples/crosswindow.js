@@ -490,8 +490,9 @@ function calculateEntryPosition(direction, position, bestWindowId) {
   //console.log('bestWindowSize', bestWindowSize)
 
   // Adjust this buffer size as needed
-  var buffer = 66; // any small values should work, without buffer the entity may get stuck in teleportation loop
-  console.log('calculateEntryPosition', direction, position);
+  var buffer = 16; // any small values should work, without buffer the entity may get stuck in teleportation loop
+  // console.log('calculateEntryPosition', direction, position)
+
   switch (direction) {
     case 'E':
     case 'NE':

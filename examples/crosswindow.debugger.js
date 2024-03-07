@@ -39,6 +39,7 @@ var CrossWindowDebugger = exports["default"] = /*#__PURE__*/function () {
     this.initUI();
     this.updateUI();
     this.crossWindowInstance = crossWindowInstance;
+
     // Define default styles for the debug window boxes
     this.defaultWindowBoxStyle = options.windowBoxStyle || {
       border: '2px solid white',
@@ -95,7 +96,7 @@ var CrossWindowDebugger = exports["default"] = /*#__PURE__*/function () {
       // Create and style currentCrossWindow
       var currentCrossWindow = document.createElement('div');
       currentCrossWindow.id = 'currentCrossWindow';
-      var crossWindowIdSpan = document.createElement('span');
+      var crossWindowIdSpan = document.createElement('div');
       crossWindowIdSpan.id = 'crossWindowId';
       crossWindowIdSpan.style.backgroundColor = '#fff';
       crossWindowIdSpan.style.height = '20px';
@@ -105,9 +106,7 @@ var CrossWindowDebugger = exports["default"] = /*#__PURE__*/function () {
       crossWindowIdSpan.style.padding = '5px';
       crossWindowIdSpan.fontSize = '1.5em';
       currentCrossWindow.appendChild(crossWindowIdSpan);
-      var br = document.createElement('br');
-      currentCrossWindow.appendChild(br);
-      var crossWindowPositionSpan = document.createElement('span');
+      var crossWindowPositionSpan = document.createElement('div');
       crossWindowPositionSpan.id = 'crossWindowPosition';
       crossWindowPositionSpan.style.backgroundColor = '#fff';
       crossWindowPositionSpan.style.height = '20px';

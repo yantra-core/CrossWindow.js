@@ -85,10 +85,15 @@ function isTouchDevice() {
 
       document.querySelectorAll('#openWindowButtons button').forEach(button => {
         button.addEventListener('click', () => {
+
           const windowWidth = window.innerWidth;
-          const windowHeight = window.outerHeight - 75; // slight adjustment for missing top bar
-          const top = window.screenX;
-          const left = window.screenY;
+          const windowHeight = window.outerHeight - 75;
+          const offsetX = window.screenX; // Current window's distance from the left edge of the screen
+          const offsetY = window.screenY; // Current window's distance from the top edge of the screen
+          let buffer = 10; // Define a buffer distance for the new window
+          let top = offsetY, left = offsetX;
+
+
 
           // Open new CrossWindow
           crosswindow.open('simple.html', {
