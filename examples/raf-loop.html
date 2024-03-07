@@ -50,7 +50,10 @@
   <script>
     document.addEventListener('DOMContentLoaded', (event) => {
 
-      let crosswindow = new CW.CrossWindow();
+      let crosswindow = new CW.CrossWindow(window, {
+        broadcastMouseEvents: false, // defaults to true
+        broadcastKeyboardEvents: false,
+      });
       let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow);
 
       document.querySelectorAll('#openWindowButtons button').forEach(button => {

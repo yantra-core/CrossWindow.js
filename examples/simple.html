@@ -61,7 +61,11 @@ function isTouchDevice() {
         alert('Please note CrossWindow multi-window demo is not optimized for touch devices.');
       }
 
-      let crosswindow = new CW.CrossWindow();
+      let crosswindow = new CW.CrossWindow(window, {
+        broadcastMouseEvents: false, // defaults to true
+        broadcastKeyboardEvents: false,
+      });
+
       let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow, {
         windowBoxStyle: {
           "border": "2px solid white",

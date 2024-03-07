@@ -82,7 +82,10 @@
 <body>
 
   <script>
-    let crosswindow = new CW.CrossWindow();
+    let crosswindow = new CW.CrossWindow(window, {
+      broadcastMouseEvents: true,
+      broadcastKeyboardEvents: true,
+    });
     // optionally we can run the debugger to show the window grid
     let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow, {
       showOtherWindows: false,

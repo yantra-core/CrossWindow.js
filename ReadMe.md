@@ -76,12 +76,15 @@ npm install crosswindow
 <script>
   document.addEventListener('DOMContentLoaded', (event) => {
 
-    let crosswindow = new CW.CrossWindow(window);
+    let crosswindow = new CW.CrossWindow(window, {
+      broadcastKeyboardEvents: true,
+      broadcastMouseEvents: true
+    });
 
     let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow, {
       showOtherWindows: true,
       showWindowLegend: true,
-      showWindowCount: true
+      showWindowCount: true,
     });
 
     document.querySelectorAll('button').forEach(button => {
