@@ -87,9 +87,7 @@
         // console.log('windowChanged', currentWindowMetadata);
       });
 
-      crosswindow.on('message', function (event) {
-        let data = event.payload;
-        console.log('GOT message', data);
+      crosswindow.on('message', function (data) {
         // recreate the element based on data.position, data.style, data.id
         const element = document.createElement('div');
         element.id = data.id;
@@ -141,6 +139,7 @@
 
             bestWindow.postMessage({
               id: elementId,
+              action: 'message',
               position: {
                 x: rect.left,
                 y: rect.top + 100 // moves the element down 100 pixels each time it leaves the viewport
