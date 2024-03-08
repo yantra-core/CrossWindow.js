@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>CrossWindow.js Demo</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A Javascript utility library for cross-window communication">
+  <script src="./mantra.js"></script>
+  <script src="./worlds.mantra.js"></script>
+  <script src="./crosswindow.js"></script>
+  <script src="./crosswindow.debugger.js"></script>
+
+  <style>
+    .main {
+      position: relative;
+      /* Makes .main the reference for absolutely positioned children */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      flex-direction: column;
+      color: white;
+      top: 20%;
+      overflow: auto;
+    }
+
+    .main a {
+      font-size: 24px;
+      color: white
+    }
+
+    .links div {
+      padding: 0.4em;
+    }
+
+    .help {
+      /* should appear at the bottom 30% of screen */
+      position: relative;
+      top: 100px;
+      padding: 1em;
+    }
+
+    button {
+      position: absolute;
+      padding: 0.3em;
+      font-size: 1.5em;
+      height: 3em;
+      /* Responsive font size */
+      cursor: pointer;
+      z-index: 9999;
+      transition: background-color 0.2s;
+      /* Smooth transition for hover effect */
+    }
+
+    button:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+      /* Change background on hover */
+    }
+
+    #openWindowButtons {
+      position: absolute;
+      top: 10px;
+      right: 160px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5em;
+      padding: 0.5em;
+      background-color: rgba(0, 0, 0, 0.5);
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .switchExample a {
+      z-index: 9999;
+      padding: 0.5em;
+      font-size: 1em;
+    }
+  </style>
+</head>
+
+<body>
+
+  <script>
+
+    function isTouchDevice() {
+      return 'ontouchstart' in window || navigator.maxTouchPoints;
+    }
+
+    // level-specific
+    let color = 'white';
+    let royGBiv = ['#FF0000', '#FFA500', '#FFFF00', '#008000', '#0000FF', '#4B0082', '#EE82EE'];
+    // check to see if win is in the query string, if so assign vaule
+    let value = window.location.search.includes('win') ? window.location.search : '';
+    // pick any random color except the current window's color
+    let filtered = royGBiv.filter(color => color !== value);
+    color = filtered[Math.floor(Math.random() * filtered.length)];
+
+    // level-specific
+    function particleCollisionHandler(a, b, pair, context) {
+      if (context.target.type === 'PARTICLE' && pair.isActive !== false) {
+        // remove one
+        // double size of this one
+
+        let colorA = context.target.color;
+        let colorB = context.owner.color;
+        if (colorA === colorB) {
+          return;
+        }
+        game.removeEntity(context.target.id);
+        console.log('colorA', colorA, 'colorB', colorB);
+        let configA = game.make().color(colorA).build();
+        let configB = game.make().color(colorB).build();
+        let mixed = game.make().mix(configA).mix(configB).build();
+        console.log('mixed', mixed.color);
+        game.updateEntity(context.owner.id, {
+          color: mixed.color,
+          size: {
+            width: context.owner.size.width * 1.1,
+            height: context.owner.size.height * 1.1
+          }
+        })
+      }
+      pair.isActive = false; // cancel the collision
+      //console.log('particleCollisionHandler', a, b, pair, context);
+    }
+
+
+    document.addEventListener('DOMContentLoaded', (event) => {
+      if (isTouchDevice()) {
+        alert('Please note CrossWindow multi-window demo is not optimized for touch devices.');
+      }
+
+      // bind to changeColor select
+      document.getElementById('changeColor').addEventListener('change', function (event) {
+        color = event.target.value;
+        game.flashMessage(color)
+
+        let fountA = game.getEntityByName('fountA');
+        let fountB = game.getEntityByName('fountB');
+
+        game.updateEntity(fountA.id, {
+          color: color,
+          metadata: {
+            unitConfig: {
+              color: color
+            }
+          },
+        });
+        game.updateEntity(fountB.id, {
+          color: color
+        });
+
+      });
+
+      document.querySelectorAll('#openWindowButtons button').forEach(button => {
+        button.addEventListener('click', function () {
+          const windowWidth = window.innerWidth;
+          const windowHeight = window.outerHeight - 75;
+          const offsetX = window.screenX; // Current window's distance from the left edge of the screen
+          const offsetY = window.screenY; // Current window's distance from the top edge of the screen
+          let buffer = 10; // Define a buffer distance for the new window
+          let top = offsetY, left = offsetX;
+
+          //console.log('top', top, 'left', left);
+          // pick a random color
+          // Open new window with calculated top and left positions
+          // TODO: game.crosswindow helper
+          game.systems.crosswindow.crosswindow.open('particles.html?win=' + color, {
+            width: windowWidth,
+            height: windowHeight,
+            top: top /*- window.outerHeight*/,
+            left: left + window.outerWidth,
+          }, true);
+        });
+      });
+
+      let game = new MANTRA.Game({
+        graphics: ['css'], // array enum, 'babylon', 'css', 'three'
+        // Plugins at construction
+        plugins: ['CrossWindow', 'SwitchGraphics', 'UnitSpawner', 'GravityWell', 'Player', 'Draggable', 'Hexapod', 'Tower', 'RBush', 'Key', 'Block', 'Collectable', 'Teleporter', 'Gamepad', 'Bullet'],
+        width: 400,
+        height: 300,
+        warnNonYantraGameRoot: true,
+        disableContextMenu: false,
+        // gameRoot: 'http://192.168.1.80:7777'
+      });
+
+      game.config.emitKeyboardInputsEvents = true;
+      window.game = game;
+      game.config.entityEmitsViewportExitEvent = true;
+
+      // Movements with right click, switch default left-click-to-move behavior
+      game.config.mouseMovementButton = 'LEFT';
+      // Actions with left click
+      game.config.mouseActionButton = 'RIGHT';
+
+      game.use('Bullet'); // plugins at runtime
+      // TODO: have boomerang work cross window ( needs dynamic target tracker like Hexapod )
+      // game.use('Boomerang'); // plugins at runtime
+
+    
+      //
+      // All the cross winder events are listening, start the mantra game
+      //
+      game.start(function () {
+
+        //game.setGravity(0, 0.1);
+        // game.make().Block().Draggable().color('blue').size(32).createEntity();
+        // Boomerang action should be left click for demo
+        /*
+        game.use(new WORLDS.worlds['GravityGardens']({
+          border: 'none',
+          colors: ['red']
+        }));
+        */
+
+
+
+
+        game.make()
+          .name('fountA')
+          .type('FOUNT')
+          .UnitSpawner({
+            unitConfig: {
+              type: 'PARTICLE',
+              color: color,
+              size: {
+                width: 8,
+                height: 8
+              },
+              // isSensor: true,
+              friction: 0,
+              frictionStatic: 0,
+              frictionAir: 0,
+              position: { x: -200, y: 0 },
+              sprayAngle: Math.PI,
+              collisionStart: particleCollisionHandler
+            }
+          })
+          .color(color)
+          .isStatic(true)
+          .size(8, 8)
+          .position(-50, 0)
+          .createEntity(); // Finalizes and creates the entity
+
+
+          game.make()
+          .name('fountB')
+          .type('FOUNT')
+          .UnitSpawner({
+            unitConfig: {
+              type: 'PARTICLE',
+              color: color,
+              size: {
+                width: 8,
+                height: 8
+              },
+              // isSensor: true,
+              friction: 0,
+              frictionStatic: 0,
+              frictionAir: 0,
+              position: { x: -200, y: 0 },
+              sprayAngle: 0,
+              collisionStart: particleCollisionHandler
+            }
+          })
+          .color(color)
+          .isStatic(true)
+          .size(8, 8)
+          .position(50, 0)
+          .createEntity(); // Finalizes and creates the entity
+
+
+        // make a gravity well in center
+        let gwConfig = game.make().GravityWell().color('red').size(4).isStatic(true).isSensor(true).position(0, -100);
+        /*
+        gwConfig.collisionStart(function (a, b, pair, context) {
+          //console.log('collisionStart', event);
+          if (context.target.type === 'PARTICLE') {
+            //console.log('collisionStart', context.target);
+            game.removeEntity(context.target.id);
+          }
+        });
+        */
+        gwConfig.position(0, -100).createEntity();
+        gwConfig.position(0, 100).createEntity();
+
+        //game.make().GravityWell().color('red').size(32).isStatic(true).isSensor(true).position(0, 100).createEntity();
+
+        game.setBackground('#ffffff');
+
+        let currentWindows = game.systems.crosswindow.crosswindow.getWindows();
+
+        // check if 'win' exists as query string variable, if no, so player
+        // if not, create player
+        let isSubWindow = window.location.search.includes('win');
+        if (!isSubWindow) {
+          let currentPlayer = game.make().Player().isSensor().createEntity();
+          // set currentPlayer in localStorage so Hexapods can track it cross window
+          let globalPosition = {
+            x: currentPlayer.position.x - window.screenX,
+            y: currentPlayer.position.y - window.screenY
+          };
+
+          // TODO: make this a mantra helper
+          game.updateEntity(currentPlayer.id, {
+            meta: {
+              equippedItems: [{
+                plugin: 'bullet',
+                method: 'fireBullet'
+              }]
+            }
+          });
+
+
+          console.log('saving global', globalPosition);
+          localStorage.setItem('mantra-currentPlayer', JSON.stringify(globalPosition));
+          // update target
+          if (game.systems.hexapod) {
+            game.systems.hexapod.setTarget(globalPosition);
+          }
+
+
+        } else {
+
+          /*
+          let savedPlayer = JSON.parse(localStorage.getItem('mantra-currentPlayer'));
+
+          // alert(localStorage.getItem('mantra-currentPlayer'));
+
+          let target = null;
+          if (savedPlayer) {
+            target = savedPlayer;
+          }
+          game.make().Hexapod({
+            target: savedPlayer
+          }).repeat(6).createEntity();
+                  */
+
+        }
+
+      });
+
+    });
+
+
+    function ensuresEntityInViewport(entityData, buffer = 50) {
+
+
+      let result = game.systems['graphics-css'].isEntityInViewport(entityData, game.data.camera.currentZoom);
+
+      if (!result.inViewport) {
+
+        // clamp the values
+        // console.log('before adjustement', entityData.position.x, entityData.position.y)
+        if (result.outsideOf.left) {
+          entityData.position.x = -window.innerWidth / 2 / game.data.camera.currentZoom;
+          entityData.position.x += buffer;
+        }
+        if (result.outsideOf.right) {
+          entityData.position.x = window.innerWidth / 2 / game.data.camera.currentZoom;
+          entityData.position.x -= buffer;
+        }
+        if (result.outsideOf.top) {
+          entityData.position.y = -window.innerHeight / 2 / game.data.camera.currentZoom;
+          entityData.position.y += buffer;
+        }
+        if (result.outsideOf.bottom) {
+          entityData.position.y = window.innerHeight / 2 / game.data.camera.currentZoom;
+          entityData.position.y -= buffer;
+        }
+
+        // console.log('after adjustement', entityData.position.x, entityData.position.y)
+
+      }
+
+    }
+
+    //
+    // Logic for handling intersection / overlapping events
+    //
+    // TODO: move this to a Mantra CrossWindow plugin
+    function handleIntersection(event) {
+      console.log('intersecting', event);
+
+      let source = event.sourceWindowId;
+      let target = event.targetWindowId;
+      let area = event.intersectionArea;
+
+      let windowWidth = window.innerWidth;
+      let windowHeight = window.innerHeight;
+      let worldPosition = {
+        x: area.position.x / game.data.camera.currentZoom,
+        y: area.position.y / game.data.camera.currentZoom
+      };
+      worldPosition.x = worldPosition.x - (windowWidth / 2);
+      worldPosition.y = worldPosition.y - (windowHeight / 2);
+
+      let worldArea = {
+        width: area.size.width / game.data.camera.currentZoom,
+        height: area.size.height / game.data.camera.currentZoom
+      };
+
+      if (game.systems.rbush) {
+        // Directly use the calculated worldPosition and worldArea for the query
+        var query = {
+          minX: worldPosition.x,
+          minY: worldPosition.y,
+          maxX: worldPosition.x + worldArea.width,
+          maxY: worldPosition.y + worldArea.height
+        };
+
+        //console.log('performing query in world coordinates', query);
+        let ents = game.systems.rbush.search(query);
+        if (ents.length) {
+          console.log('found ents in world coordinates', ents);
+        }
+
+        if (ents.length) {
+          // iterate through all the ents, remove them and add them to the other window
+          for (let i = 0; i < ents.length; i++) {
+            let entity = game.getEntity(ents[i]);
+            entity.position.z = 1;
+            entity.screenPosition = {
+              x: entity.position.x * game.data.camera.currentZoom + (windowWidth / 2),
+              y: entity.position.y * game.data.camera.currentZoom + (windowHeight / 2),
+              z: 1
+            };
+            console.log(ents[i], entity)
+            let entityData = {
+              id: entity.id,
+              type: entity.type,
+              position: entity.position,
+              rotation: entity.rotation,
+              // velocity: entity.velocity,
+              rotation: entity.rotation,
+              body: true,
+              items: entity.items,
+              screenPosition: entity.screenPosition
+            };
+
+            console.log('entityData', entityData);
+            entityData.source = source;
+            entityData.action = 'message';
+            crosswindow.sendMessage(entityData);
+            console.log('Message sent to parent window:', source, entityData);
+            console.log('my current window', crosswindow.windowId);
+            console.log("the target was", target)
+            // instead of just a remove / create here
+            // should we instead have an updateEntity method?
+            // such that the items never get scooped up, just duplicated?
+            // should work, but we do need to keep a local mapping table here
+            // of remote entId to localId so we can update by remoteId
+            // ( ent ids wont match cross mantra instance )
+            // for now, until proper instection update is working 
+            // game.removeEntity(entityData.id);
+          }
+        }
+
+      }
+    }
+
+
+  </script>
+  <div id="openWindowButtons">
+    <button>Open Window</button>
+  </div>
+
+  <div class="main">
+
+    <div>
+      <h1>CrossWindow.js + Mantra.js</h1>
+    </div>
+    <div class="links">
+      <div>
+        <a href="https://github.com/yantra-core/CrossWindow.js">Github Source</a>
+      </div>
+      <div class="switchExample">
+        <a href="https://yantra.gg/crosswindow/simple">Switch to Simple Example</a>
+      </div>
+
+    </div>
+    <!-- let royGBivHex = ['#FF0000', '#FFA500', '#FFFF00', '#008000', '#0000FF', '#4B0082', '#EE82EE']; -->
+    <select id="changeColor">
+      <option value="#FF0000">Red</option>
+      <option value="#FFA500">Orange</option>
+      <option value="#FFFF00">Yellow</option>
+      <option value="#008000">Green</option>
+      <option value="#0000FF">Blue</option>
+      <option value="#4B0082">Indigo</option>
+      <option value="#EE82EE">Violet</option>
+    </select>
+  </div>
+
+</body>
+
+</html>

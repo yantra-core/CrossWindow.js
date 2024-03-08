@@ -40,36 +40,6 @@
       padding: 1em;
     }
 
-    button {
-      position: absolute;
-      padding: 0.3em;
-      font-size: 1.5em;
-      height: 3em;
-      /* Responsive font size */
-      cursor: pointer;
-      z-index: 9999;
-      transition: background-color 0.2s;
-      /* Smooth transition for hover effect */
-    }
-
-    button:hover {
-      background-color: rgba(255, 255, 255, 0.2);
-      /* Change background on hover */
-    }
-
-    #openWindowButtons {
-      position: absolute;
-      top: 10px;
-      right: 160px;
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5em;
-      padding: 0.5em;
-      background-color: rgba(0, 0, 0, 0.5);
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-    }
 
     .switchExample a {
       z-index: 9999;
@@ -82,16 +52,7 @@
 <body>
 
   <script>
-    let crosswindow = new CW.CrossWindow(window, {
-      broadcastMouseEvents: true,
-      broadcastKeyboardEvents: true,
-    });
-    // optionally we can run the debugger to show the window grid
-    let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow, {
-      showOtherWindows: false,
-      showWindowLegend: false,
-      showWindowCount: true
-    });
+
 
     function isTouchDevice() {
       return 'ontouchstart' in window || navigator.maxTouchPoints;
@@ -133,7 +94,7 @@
       let game = new MANTRA.Game({
         graphics: ['css'], // array enum, 'babylon', 'css', 'three'
         // Plugins at construction
-        plugins: ['Player', 'Draggable', 'Hexapod', 'Tower', 'RBush', 'Key', 'Block', 'Collectable', 'Teleporter', 'Gamepad', 'Bullet'],
+        plugins: ['Player', 'CrossWindow', 'Hexapod', 'Tower', 'RBush', 'Key', 'Block', 'Collectable', 'Teleporter', 'Gamepad', 'Bullet'],
         width: 400,
         height: 300,
         warnNonYantraGameRoot: true,
@@ -151,210 +112,12 @@
       game.config.mouseActionButton = 'RIGHT';
 
       game.use('Bullet'); // plugins at runtime
-      // TODO: have boomerang work cross window ( needs dynamic target tracker like Hexapod )
-      // game.use('Boomerang'); // plugins at runtime
-
-      let remoteEntMap = {};
-
-      crosswindow.on('message', function (event) {
-        let data = event.data || event.payload; // fix this
-        let action = event.action;
-
-        if (event.payload && event.payload.action) { // TODO: remove this code legacy api
-          // TODO: remove this old API
-          action = event.payload.action;
-          data = event.payload;
-        }
-
-        //
-        // Handles case when windows are intersecting / overlapping
-        //
-        if (action === 'intersecting') {
-          handleIntersection(event);
-          return;
-        }
-
-        //
-        // Handles all user-space / user-defined messages
-        //
-        if (action === 'message') {
-          handleMessage(event);
-        }
-
-      });
-
-      function handleMessage(data) {
-        //
-        // Default action case 'message'
-        // This will create the ent, TODO: move to Mantra as generic re-inflate from remote node code
-
-        // assume that data is Mantra entityData, inflate it
-        // keep any update / versus create logic outside of crosswindow
-
-        //  game.flashMessage(action);
-
-        //console.log('Message received from another window:', event, source, data);
-        //console.log('my window', crosswindow.windowId);
-        //console.log("the source", source)
-
-        let entityData = data;
-        // Remark: The other conditional case is for intersecting and overlapping ents
-        // that would exist in both windows at once ( with one being hidden behind the other )
-
-        window.focus();
-
-        // Mantra processes can track entity source to create relational maps of entities across nodes
-        // In this case, those nodes are CrossWindow instances ( browsers )
-        entityData.source = crosswindow.windowId + '_' + entityData.id;
-
-        // check to see if we are inflating this entity outside of the viewport for either x or y,
-        // if so clamp it to the viewport adjusted for the current zoom
-
-        // Remark: Out of bounds shouldnt' actually ever happen; however, it's a good idea to have this check
-        // during development as there are several calculations related to zoom adjustments
-        // and if one of them is off, it could cause an entity to be inflated outside of the viewport
-        // and go into infinite loop of teleporting / re-inflating
-        // It's also very easy for developers to accidentally set an entity's position in practice to a value that's
-        // outside of bounds and without clamp logic, it could cause the same issue and poor developer experience
-        // TODO: we could move this code into a Mantra helper
-        ensuresEntityInViewport(entityData, 50);
-
-        let ent = game.inflateEntity(entityData);
-        // console.log('inflate the ent', ent)
-        if (ent.type === "PLAYER") {
-
-          // set the player id for Mantra can associate input events with the player
-          game.setPlayerId(ent.id);// not needed anymore? handled by createEntity()?
-
-          let globalPosition = {
-            x: ent.position.x + window.screenX,
-            y: ent.position.y + window.screenY
-          };
-
-          // Store player position in localStorage so Hexapods can track it cross window
-          localStorage.setItem('mantra-currentPlayer', JSON.stringify(globalPosition));
-
-          // update target
-          if (game.systems.hexapod) {
-            game.systems.hexapod.setTarget(globalPosition);
-          }
-
-          // TODO: make this a mantra helper
-          // TODO: move this to inflate...
-          // Remark: We may be able to remove this now and it will work, if not check inflateEntity.js
-          game.updateEntity(ent.id, {
-            meta: {
-              equippedItems: [{
-                plugin: 'bullet',
-                method: 'fireBullet'
-              }]
-            }
-          });
-
-        }
-
-      }
-
-      // this will render the current window box *once* immediately on load
-      // Remark: Can we now remove this? Debugger should do this automatically
-      crosswindow.emit('windowChanged', {
-        windowId: crosswindow.windowId,
-        metadata: {
-          position: {
-            x: window.screenX,
-            y: window.screenY
-          },
-          size: {
-            width: window.innerWidth,
-            height: window.innerHeight
-          }
-        }
-      });
-
-      //
-      // Listen to the Mantra event for when entity leaves the viewport
-      //
-      game.on('entity::exited::viewport', function (entity) {
-        let actualItems = [];
-        if (entity.items) {
-          entity.items.forEach(item => {
-            let ent = game.getEntity(item);
-            console.log('exit item ent', ent)
-            if (ent) {
-              actualItems.push({
-                position: ent.position, // TODO: normalize position
-                size: ent.size,
-                type: ent.type,
-                collectable: ent.collectable
-              });
-            }
-          });
-
-        }
-
-        // console.log('sending out actual items', actualItems)
-        let entityData = {
-          id: entity.id,
-          type: entity.type,
-          health: entity.health,
-          position: entity.position,
-          rotation: entity.rotation,
-          velocity: entity.velocity,
-          rotation: entity.rotation,
-          meta: entity.meta,
-          items: actualItems,
-          size: entity.size,
-          body: entity.body,
-          mass: entity.mass,
-          // etc, all props, iterate? mantra helper?
-          screenPosition: entity.screenPosition
-        };
-
-        // console.log('entity::exited::viewport', entityData);
-
-        let bestWindow = crosswindow.getBestWindow(entityData, game.data.camera.currentZoom);
-
-        // console.log('found bestWindow', bestWindow, crosswindow.windowId);
-        if (bestWindow) {
-
-          //let entryPosition = bestWindow.entryPosition(direction, entityData);
-          //console.log('entryPositionentryPositionentryPosition')
-          if (bestWindow.windowId === crosswindow.windowId) {
-            // if the best window is the current window, then we don't need to send a message
-            // just update it's position with re-entry coordinates
-            // console.log("game.setPosition", bestWindow, entityData.entryPosition)
-            let position = { ...bestWindow.entryPosition }; // Creating a copy to avoid modifying the original entryPosition
-            entityData.position = position;
-            ensuresEntityInViewport(entityData, 50);
-
-
-            game.setPosition(entity.id, position);
-            return;
-          } else {
-            // console.log('removing', entity.id)
-            game.removeEntity(entity.id);
-            // console.log('Message sent to best window:', entityData, bestWindow);
-            entityData.action = 'message';
-            bestWindow.postMessage(entityData);
-          }
-        } else {
-          // console.log('no bestWindow', bestWindow)
-          // this should *not* happen with getBestWindow() default fallbacks
-        }
-
-      });
-
-      //
-      // All the cross winder events are listening, start the mantra game
-      //
+   
       game.start(function () {
-
-        // game.make().Block().Draggable().color('blue').size(32).createEntity();
-        // Boomerang action should be left click for demo
-
+    
         game.setBackground('#000000');
 
-        let currentWindows = crosswindow.getWindows();
+        let currentWindows = game.systems.crosswindow.crosswindow.getWindows();
 
         // check if 'win' exists as query string variable, if no, so player
         // if not, create player
@@ -405,142 +168,16 @@
           if (savedPlayer) {
             target = savedPlayer;
           }
-          /*
           game.make().Hexapod({
             target: savedPlayer
           }).repeat(6).createEntity();
-          */
         }
 
       });
 
     });
 
-
-    function ensuresEntityInViewport(entityData, buffer = 50) {
-
-
-      let result = game.systems['graphics-css'].isEntityInViewport(entityData, game.data.camera.currentZoom);
-
-      if (!result.inViewport) {
-
-        // clamp the values
-        // console.log('before adjustement', entityData.position.x, entityData.position.y)
-        if (result.outsideOf.left) {
-          entityData.position.x = -window.innerWidth / 2 / game.data.camera.currentZoom;
-          entityData.position.x += buffer;
-        }
-        if (result.outsideOf.right) {
-          entityData.position.x = window.innerWidth / 2 / game.data.camera.currentZoom;
-          entityData.position.x -= buffer;
-        }
-        if (result.outsideOf.top) {
-          entityData.position.y = -window.innerHeight / 2 / game.data.camera.currentZoom;
-          entityData.position.y += buffer;
-        }
-        if (result.outsideOf.bottom) {
-          entityData.position.y = window.innerHeight / 2 / game.data.camera.currentZoom;
-          entityData.position.y -= buffer;
-        }
-
-        // console.log('after adjustement', entityData.position.x, entityData.position.y)
-
-      }
-
-
-
-
-    }
-
-    //
-    // Logic for handling intersection / overlapping events
-    //
-    // TODO: move this to a Mantra CrossWindow plugin
-    function handleIntersection(event) {
-      console.log('intersecting', event);
-
-      let source = event.sourceWindowId;
-      let target = event.targetWindowId;
-      let area = event.intersectionArea;
-
-      let windowWidth = window.innerWidth;
-      let windowHeight = window.innerHeight;
-      let worldPosition = {
-        x: area.position.x / game.data.camera.currentZoom,
-        y: area.position.y / game.data.camera.currentZoom
-      };
-      worldPosition.x = worldPosition.x - (windowWidth / 2);
-      worldPosition.y = worldPosition.y - (windowHeight / 2);
-
-      let worldArea = {
-        width: area.size.width / game.data.camera.currentZoom,
-        height: area.size.height / game.data.camera.currentZoom
-      };
-
-      if (game.systems.rbush) {
-        // Directly use the calculated worldPosition and worldArea for the query
-        var query = {
-          minX: worldPosition.x,
-          minY: worldPosition.y,
-          maxX: worldPosition.x + worldArea.width,
-          maxY: worldPosition.y + worldArea.height
-        };
-
-        //console.log('performing query in world coordinates', query);
-        let ents = game.systems.rbush.search(query);
-        if (ents.length) {
-          console.log('found ents in world coordinates', ents);
-        }
-
-        if (ents.length) {
-          // iterate through all the ents, remove them and add them to the other window
-          for (let i = 0; i < ents.length; i++) {
-            let entity = game.getEntity(ents[i]);
-            entity.position.z = 1;
-            entity.screenPosition = {
-              x: entity.position.x * game.data.camera.currentZoom + (windowWidth / 2),
-              y: entity.position.y * game.data.camera.currentZoom + (windowHeight / 2),
-              z: 1
-            };
-            console.log(ents[i], entity)
-            let entityData = {
-              id: entity.id,
-              type: entity.type,
-              position: entity.position,
-              rotation: entity.rotation,
-              velocity: entity.velocity,
-              rotation: entity.rotation,
-              body: true,
-              items: entity.items,
-              screenPosition: entity.screenPosition
-            };
-
-            console.log('entityData', entityData);
-            entityData.source = source;
-            entityData.action = 'message';
-            crosswindow.sendMessage(entityData);
-            console.log('Message sent to parent window:', source, entityData);
-            console.log('my current window', crosswindow.windowId);
-            console.log("the target was", target)
-            // instead of just a remove / create here
-            // should we instead have an updateEntity method?
-            // such that the items never get scooped up, just duplicated?
-            // should work, but we do need to keep a local mapping table here
-            // of remote entId to localId so we can update by remoteId
-            // ( ent ids wont match cross mantra instance )
-            // for now, until proper instection update is working 
-            // game.removeEntity(entityData.id);
-          }
-        }
-
-      }
-    }
-
-
   </script>
-  <div id="openWindowButtons">
-    <button>Open Window</button>
-  </div>
 
   <div class="main">
 

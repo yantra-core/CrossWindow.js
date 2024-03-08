@@ -17,7 +17,7 @@
 </h4>
 
 
-A `22kb` utility library for cross-window communication using BroadcastChannel for messaging and LocalStorage for discovery.
+A `22kb` utility library for cross-window communication LocalStorage and BroadcastChannel.
 
 You can use CrossWindow.js to build applications that need to be aware of the positional metadata of other open browser windows. CrossWindow allows you to send spatially aware data messages to the "best" available window.
 
@@ -176,7 +176,6 @@ npm install crosswindow
   - [🟡]  Intersection events for overlapping windows ( WIP needs demo )
   - [❌]  Cardinal direction helpers for opening windows ( N,S,E,W )
   - [❌]  Advanced windowing layouts ( cascade / tile / grid / etc )
-
 
 # Detecting if an element has left the Viewport
 
