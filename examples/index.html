@@ -184,7 +184,6 @@
       });
 
       function handleMessage(data) {
-
         //
         // Default action case 'message'
         // This will create the ent, TODO: move to Mantra as generic re-inflate from remote node code
@@ -212,45 +211,20 @@
         // if so clamp it to the viewport adjusted for the current zoom
 
         // Remark: Out of bounds shouldnt' actually ever happen; however, it's a good idea to have this check
-            // during development as there are several calculations related to zoom adjustments
-            // and if one of them is off, it could cause an entity to be inflated outside of the viewport
-            // and go into infinite loop of teleporting / re-inflating
-            // It's also very easy for developers to accidentally set an entity's position in practice to a value that's
-            // outside of bounds and without clamp logic, it could cause the same issue and poor developer experience
+        // during development as there are several calculations related to zoom adjustments
+        // and if one of them is off, it could cause an entity to be inflated outside of the viewport
+        // and go into infinite loop of teleporting / re-inflating
+        // It's also very easy for developers to accidentally set an entity's position in practice to a value that's
+        // outside of bounds and without clamp logic, it could cause the same issue and poor developer experience
         // TODO: we could move this code into a Mantra helper
-        let result = game.systems['graphics-css'].isEntityInViewport(entityData, game.data.camera.currentZoom);
-        if (!result.inViewport) {
-          // clamp the values
-          // console.log('before adjustement', entityData.position.x, entityData.position.y)
-
-          let buffer = 50;
-          if (result.outsideOf.left) {
-            entityData.position.x = -window.innerWidth / 2 / game.data.camera.currentZoom;
-            entityData.position.x += buffer;
-          }
-          if (result.outsideOf.right) {
-            entityData.position.x = window.innerWidth / 2 / game.data.camera.currentZoom;
-            entityData.position.x -= buffer;
-          }
-          if (result.outsideOf.top) {
-            entityData.position.y = -window.innerHeight / 2 / game.data.camera.currentZoom;
-            entityData.position.y += buffer;
-          }
-          if (result.outsideOf.bottom) {
-            entityData.position.y = window.innerHeight / 2 / game.data.camera.currentZoom;
-            entityData.position.y -= buffer;
-          }
-          
-          // console.log('after adjustement', entityData.position.x, entityData.position.y)
-
-        }
+        ensuresEntityInViewport(entityData, 50);
 
         let ent = game.inflateEntity(entityData);
-        console.log('inflate the ent', ent)
+        // console.log('inflate the ent', ent)
         if (ent.type === "PLAYER") {
 
           // set the player id for Mantra can associate input events with the player
-          // game.setPlayerId(ent.id);// not needed anymore? handled by createEntity()?
+          game.setPlayerId(ent.id);// not needed anymore? handled by createEntity()?
 
           let globalPosition = {
             x: ent.position.x + window.screenX,
@@ -350,7 +324,11 @@
             // just update it's position with re-entry coordinates
             // console.log("game.setPosition", bestWindow, entityData.entryPosition)
             let position = { ...bestWindow.entryPosition }; // Creating a copy to avoid modifying the original entryPosition
-            game.setPosition(entity.id, entityData.position);
+            entityData.position = position;
+            ensuresEntityInViewport(entityData, 50);
+
+
+            game.setPosition(entity.id, position);
             return;
           } else {
             // console.log('removing', entity.id)
@@ -437,6 +415,42 @@
       });
 
     });
+
+
+    function ensuresEntityInViewport(entityData, buffer = 50) {
+
+
+      let result = game.systems['graphics-css'].isEntityInViewport(entityData, game.data.camera.currentZoom);
+
+      if (!result.inViewport) {
+
+        // clamp the values
+        // console.log('before adjustement', entityData.position.x, entityData.position.y)
+        if (result.outsideOf.left) {
+          entityData.position.x = -window.innerWidth / 2 / game.data.camera.currentZoom;
+          entityData.position.x += buffer;
+        }
+        if (result.outsideOf.right) {
+          entityData.position.x = window.innerWidth / 2 / game.data.camera.currentZoom;
+          entityData.position.x -= buffer;
+        }
+        if (result.outsideOf.top) {
+          entityData.position.y = -window.innerHeight / 2 / game.data.camera.currentZoom;
+          entityData.position.y += buffer;
+        }
+        if (result.outsideOf.bottom) {
+          entityData.position.y = window.innerHeight / 2 / game.data.camera.currentZoom;
+          entityData.position.y -= buffer;
+        }
+
+        // console.log('after adjustement', entityData.position.x, entityData.position.y)
+
+      }
+
+
+
+
+    }
 
     //
     // Logic for handling intersection / overlapping events
