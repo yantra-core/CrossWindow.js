@@ -52,132 +52,118 @@
 <body>
 
   <script>
-
-
+    // Function to check if the device supports touch
     function isTouchDevice() {
       return 'ontouchstart' in window || navigator.maxTouchPoints;
     }
-
-    document.addEventListener('DOMContentLoaded', (event) => {
-
-      if (isTouchDevice()) {
-        alert('Please note CrossWindow multi-window demo is not optimized for touch devices.');
-      }
-
-      // when click helpLabel toggle background visibility
-      document.querySelector('.helpLabel').addEventListener('click', function () {
-        let main = document.querySelector('.main');
-        main.style.display = 'none';
-      });
-
-      document.querySelectorAll('#openWindowButtons button').forEach(button => {
-        button.addEventListener('click', function () {
-          const windowWidth = window.innerWidth;
-          const windowHeight = window.outerHeight - 75;
-          const offsetX = window.screenX; // Current window's distance from the left edge of the screen
-          const offsetY = window.screenY; // Current window's distance from the top edge of the screen
-          let buffer = 10; // Define a buffer distance for the new window
-          let top = offsetY, left = offsetX;
-
-          //console.log('top', top, 'left', left);
-
-          // Open new window with calculated top and left positions
-          crosswindow.open('index.html?win', {
-            width: windowWidth,
-            height: windowHeight,
-            top: top /*- window.outerHeight*/,
-            left: left + window.outerWidth,
-          }, true);
-        });
-      });
-
+  
+    // Function to initialize the game
+    function initializeGame() {
+      // Game configuration
       let game = new MANTRA.Game({
-        graphics: ['css'], // array enum, 'babylon', 'css', 'three'
-        // Plugins at construction
-        plugins: ['Player', 'CrossWindow', 'Hexapod', 'Tower', 'RBush', 'Key', 'Block', 'Collectable', 'Teleporter', 'Gamepad', 'Bullet'],
+        graphics: ['css'], // Graphics engine
+        plugins: ['Player', 'Hexapod', 'Tower', 'RBush', 'Key', 'Block', 'Collectable', 'Teleporter', 'Gamepad', 'Bullet'],
         width: 400,
         height: 300,
-        warnNonYantraGameRoot: true,
+        warnNonYantraGameRoot: false,
         disableContextMenu: false,
         gameRoot: 'http://192.168.1.80:7777'
       });
-
+  
+      // Additional game setup
+      game.use('CrossWindow', {
+        debugger: {
+          showExampleBarContainer: true
+        }
+      });
+  
+      // Configure keyboard and mouse inputs
       game.config.emitKeyboardInputsEvents = true;
-      window.game = game;
       game.config.entityEmitsViewportExitEvent = true;
-
-      // Movements with right click, switch default left-click-to-move behavior
-      game.config.mouseMovementButton = 'LEFT';
-      // Actions with left click
-      game.config.mouseActionButton = 'RIGHT';
-
-      game.use('Bullet'); // plugins at runtime
-   
+      game.config.mouseMovementButton = 'LEFT'; // Move with right click
+      game.config.mouseActionButton = 'RIGHT'; // Action with left click
+  
+      // Add plugins at runtime
+      game.use('Bullet');
+  
+      // Expose the game object globally
+      window.game = game;
+  
+      return game;
+    }
+  
+    // Main game logic
+    function startGame(game) {
       game.start(function () {
-    
+        // Remove help section if 'win' is present in the URL
+        if (window.location.search.includes('win')) {
+          document.querySelector('.main').remove();
+        }
+  
+        // Set game background
         game.setBackground('#000000');
-
-        let currentWindows = game.systems.crosswindow.crosswindow.getWindows();
-
-        // check if 'win' exists as query string variable, if no, so player
-        // if not, create player
+  
+        // Player creation logic
         let isSubWindow = window.location.search.includes('win');
         if (!isSubWindow) {
-          let currentPlayer = game.make().Player().createEntity();
-          // set currentPlayer in localStorage so Hexapods can track it cross window
-          let globalPosition = {
-            x: currentPlayer.position.x - window.screenX,
-            y: currentPlayer.position.y - window.screenY
-          };
-
-          // TODO: make this a mantra helper
-          game.updateEntity(currentPlayer.id, {
-            meta: {
-              equippedItems: [{
-                plugin: 'bullet',
-                method: 'fireBullet'
-              }]
-            }
-          });
-
-          console.log('saving global', globalPosition);
-          localStorage.setItem('mantra-currentPlayer', JSON.stringify(globalPosition));
-          // update target
-          if (game.systems.hexapod) {
-            game.systems.hexapod.setTarget(globalPosition);
-          }
-          /*
-          for (let i = 0; i < 1; i++) {
-          let randomRadial = game.radialSpread(0, 0, 100, 1, i);
-            setTimeout(function(){
-              game.make().Key({
-              position: randomRadial
-            }).body(true).createEntity();
-          }, 30000)
-                  }
-
-          */
-
+          createPlayer(game);
         } else {
-
-          let savedPlayer = JSON.parse(localStorage.getItem('mantra-currentPlayer'));
-
-          // alert(localStorage.getItem('mantra-currentPlayer'));
-
-          let target = null;
-          if (savedPlayer) {
-            target = savedPlayer;
-          }
-          game.make().Hexapod({
-            target: savedPlayer
-          }).repeat(6).createEntity();
+          recreatePlayer(game);
         }
-
       });
-
+    }
+  
+    // Function to create a new player
+    function createPlayer(game) {
+      let currentPlayer = game.make().Player().createEntity();
+      let globalPosition = calculateGlobalPosition(currentPlayer);
+  
+      // Equip the player and save its position globally
+      game.updateEntity(currentPlayer.id, {
+        meta: { equippedItems: [{ plugin: 'bullet', method: 'fireBullet' }] }
+      });
+      localStorage.setItem('mantra-currentPlayer', JSON.stringify(globalPosition));
+  
+      // Set Hexapod target
+      if (game.systems.hexapod) {
+        game.systems.hexapod.setTarget(globalPosition);
+      }
+    }
+  
+    // Function to calculate global position
+    function calculateGlobalPosition(currentPlayer) {
+      return {
+        x: currentPlayer.position.x - window.screenX,
+        y: currentPlayer.position.y - window.screenY
+      };
+    }
+  
+    // Function to recreate player from saved state
+    function recreatePlayer(game) {
+      let savedPlayer = JSON.parse(localStorage.getItem('mantra-currentPlayer'));
+      if (savedPlayer) {
+        game.make().Hexapod({ target: savedPlayer }).repeat(6).createEntity();
+      }
+    }
+  
+    // DOM content loaded event listener
+    document.addEventListener('DOMContentLoaded', (event) => {
+      // Alert for touch devices
+      if (isTouchDevice()) {
+        alert('Please note CrossWindow multi-window demo is not optimized for touch devices.');
+      }
+  
+      // Click event listener for .helpLabel
+      document.querySelector('.helpLabel').addEventListener('click', function () {
+        document.querySelector('.main').style.display = 'none';
+      });
+  
+      // Initialize and start the game
+      let game = initializeGame();
+      startGame(game);
     });
-
   </script>
+  
 
   <div class="main">
 

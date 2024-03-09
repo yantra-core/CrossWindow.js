@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>CrossWindow.js Demo</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A Javascript utility library for cross-window communication">
+  <script src="./mantra.js"></script>
+  <script src="./worlds.mantra.js"></script>
+  <script src="./crosswindow.js"></script>
+  <script src="./crosswindow.debugger.js"></script>
+
+  <style>
+    .main {
+      position: relative;
+      /* Makes .main the reference for absolutely positioned children */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      flex-direction: column;
+      color: white;
+      top: 20%;
+      overflow: auto;
+    }
+
+    .main a {
+      font-size: 24px;
+      color: white
+    }
+
+    .links div {
+      padding: 0.4em;
+    }
+
+    .help {
+      /* should appear at the bottom 30% of screen */
+      position: relative;
+      top: 100px;
+      padding: 1em;
+    }
+
+    button {
+      position: absolute;
+      padding: 0.3em;
+      font-size: 1.5em;
+      height: 3em;
+      /* Responsive font size */
+      cursor: pointer;
+      z-index: 9999;
+      transition: background-color 0.2s;
+      /* Smooth transition for hover effect */
+    }
+
+    button:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+      /* Change background on hover */
+    }
+
+    #openWindowButtons {
+      position: absolute;
+      top: 10px;
+      right: 160px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5em;
+      padding: 0.5em;
+      background-color: rgba(0, 0, 0, 0.5);
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .switchExample a {
+      z-index: 9999;
+      padding: 0.5em;
+      font-size: 1em;
+    }
+  </style>
+</head>
+
+<body>
+
+  <script>
+    // Check if the device supports touch input
+    function isTouchDevice() {
+      return 'ontouchstart' in window || navigator.maxTouchPoints;
+    }
+
+    // Warn users on touch devices
+    function warnTouchDeviceUsers() {
+      if (isTouchDevice()) {
+        alert('Please note CrossWindow multi-window demo is not optimized for touch devices.');
+      }
+    }
+
+    // Remove the help element if 'win' is present in the URL
+    function removeHelpForWinUrl() {
+      if (window.location.search.includes('win')) {
+        document.querySelector('.main')?.remove();
+      }
+    }
+
+    // Initialize and configure the game
+    function initializeGame() {
+      let game = new MANTRA.Game({
+        width: 400,
+        height: 300,
+        camera: 'follow',
+        graphics: ['css'], // Available options: 'babylon', 'phaser', 'css', 'three'
+        gameRoot: 'http://192.168.1.80:7777',
+        plugins: [
+          'Bullet',
+          'Button',
+          'Checkbox',
+          'Container',
+          'FlashMessage',
+          'Player',
+          'Radio',
+          'RBush', // Required for Infinite Tiles
+          'Select',
+          'SwitchGraphics',
+          'Tile',
+          'TileMap'
+        ]
+      });
+
+      configureGameSettings(game);
+      window.game = game; // Expose game globally
+
+      return game;
+    }
+
+    // Configure game settings
+    function configureGameSettings(game) {
+      game.use('CrossWindow', {
+        debugger: { showExampleBarContainer: true }
+      });
+      game.config.emitKeyboardInputsEvents = true;
+      game.config.entityEmitsViewportExitEvent = true;
+      game.config.mouseMovementButton = 'LEFT'; // Movement with right click
+      game.config.mouseActionButton = 'RIGHT'; // Actions with left click
+    }
+
+    // Start the game and set up the environment
+    function startGame(game) {
+
+      game.start(() => {
+        game.setBackground('black');
+
+
+        let container = game.make().Container()
+          .position(-50, -50, 1)
+          .name('tilemap-container')
+          .style({ display: 'none' })
+          .createEntity();
+
+        setupUIComponents(game);
+        createPlayer(game);
+
+        generateTerrain(game); // Generate initial terrain
+      });
+    }
+
+    // Set up UI components like maze selector and regenerate button
+    function setupUIComponents(game) {
+      const mazeSelector = createMazeSelector(game);
+      createRegenerateButton(game, mazeSelector);
+    }
+
+    // Create maze selector dropdown
+    function createMazeSelector(game) {
+      let mazeSelector = game.make().name('mazeSelector').Select();
+      mazeSelector.meta({ options: getMazeOptions(game.mazes) });
+      mazeSelector.position(-40, 130, 11111);
+      mazeSelector.afterUpdateEntity((context) => {
+        if (context && context.value !== undefined) {
+          console.log('Selected Terrain:', context.value);
+          generateTerrain(game, context.value);
+        }
+      });
+      mazeSelector.createEntity();
+
+      return mazeSelector;
+    }
+
+    // Create button to regenerate terrain
+    function createRegenerateButton(game, mazeSelector) {
+      let regenButton = game.make().Button()
+        .text('Regenerate Terrain').style({ fontSize: '10px' })
+        .height(30)
+        .position(125, 95, 11111);
+      regenButton.pointerdown(() => {
+        let currentValue = mazeSelector.value || 'AldousBroder';
+        console.log('Regenerating Terrain:', currentValue);
+        generateTerrain(game, currentValue);
+      });
+      regenButton.createEntity();
+    }
+
+    // Utility function to convert game mazes into dropdown options
+    function getMazeOptions(mazes) {
+      return Object.keys(mazes).map(key => ({ value: key, label: key }));
+    }
+
+    // Generate terrain based on the selected type and options
+    function generateTerrain(game, type = 'AldousBroder', options = {}) {
+      // Clear previous terrain in the container
+      clearPreviousTerrain(game);
+
+      options = getDefaultTerrainOptions(options);
+      try {
+        game.systems.tilemap.generateTerrain(type, options);
+        console.log("Generated Terrain:", options);
+      } catch (err) {
+        displayTerrainGenerationError(game, err);
+      }
+    }
+
+    // Clear previous terrain entities
+    function clearPreviousTerrain(game) {
+      let container = game.getEntityByName('tilemap-container');
+      if (container && container.items) {
+        container.items.forEach(eId => game.removeEntity(eId));
+      }
+    }
+
+    // Set default terrain options if not provided
+    function getDefaultTerrainOptions(options) {
+      return {
+        width: 32,
+        height: 32,
+        depth: 1,
+        mode: '2D',
+        stackingMode: 'unique',
+        seed: 1234,
+        ...options
+      };
+    }
+
+    // Display error message for terrain generation failure
+    function displayTerrainGenerationError(game, err) {
+      game.systems.flash.showMessage({
+        message: `Error generating terrain: ${err.message}. Try again.`,
+        type: 'error',
+        duration: 5000
+      });
+    }
+
+    // Create the player entity
+    function createPlayer(game) {
+      game.make().Player().position(0, 0, 16).meta({
+        equippedItems: [{ plugin: 'bullet', method: 'fireBullet' }]
+      }).createEntity();
+    }
+
+    // Main entry point
+    document.addEventListener('DOMContentLoaded', () => {
+      warnTouchDeviceUsers();
+      removeHelpForWinUrl();
+
+      const game = initializeGame();
+      startGame(game);
+    });
+  </script>
+
+
+  <div id="openWindowButtons">
+    <button>Open Window</button>
+  </div>
+
+  <div class="main">
+
+    <div>
+      <h1>CrossWindow.js + Mantra.js</h1>
+    </div>
+    <div class="links">
+      <div>
+        <a href="https://github.com/yantra-core/CrossWindow.js">Github Source</a>
+      </div>
+      <div class="switchExample">
+        <a href="https://yantra.gg/crosswindow/simple">Switch to Simple Example</a>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+
+</html>
