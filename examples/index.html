@@ -9,12 +9,14 @@
   <script src="./mantra.js"></script>
   <script src="./crosswindow.js"></script>
   <script src="./crosswindow.debugger.js"></script>
+  <link rel="stylesheet" href="./crosswindow.debugger.css">
 
   <style>
-    body  {
+    body {
       overflow: auto;
       height: 100vh;
     }
+
     .main {
       height: 100%;
       position: relative;
@@ -26,6 +28,7 @@
       flex-direction: column;
       color: white;
       overflow: auto;
+      padding-top: 60px;
     }
 
     .main a {
@@ -54,6 +57,12 @@
       z-index: 9999;
       padding: 0.5em;
     }
+
+    .exampleLinks {
+      position: relative;
+      left: 60px;
+    }
+ 
   </style>
 </head>
 
@@ -64,20 +73,20 @@
     function isTouchDevice() {
       return 'ontouchstart' in window || navigator.maxTouchPoints;
     }
-  
+
     // Function to initialize the game
     function initializeGame() {
       // Game configuration
       let game = new MANTRA.Game({
         graphics: ['css'], // Graphics engine
-        plugins: ['Player', 'Hexapod', 'Lifetime', 'Text', 'Coin', 'RBush', 'Key', 'Block', 'Collectable', 'Teleporter', 'Gamepad', 'Bullet'],
+        plugins: ['Player', 'Hexapod', 'Text', 'Coin', 'RBush', 'Key', 'Block', 'Collectable', 'Teleporter', 'Gamepad', 'Bullet'],
         width: 400,
         height: 300,
         warnNonYantraGameRoot: false,
         disableContextMenu: false,
         gameRoot: 'http://192.168.1.80:7777'
       });
-  
+
       // Additional game setup
       game.use('CrossWindow', {
         debugger: {
@@ -88,22 +97,22 @@
           showOpenWindowButton: false,
         }
       });
-  
+
       // Configure keyboard and mouse inputs
       game.config.emitKeyboardInputsEvents = true;
       game.config.entityEmitsViewportExitEvent = true;
       game.config.mouseMovementButton = 'LEFT'; // Move with right click
       game.config.mouseActionButton = 'RIGHT'; // Action with left click
-  
+
       // Add plugins at runtime
       game.use('Bullet');
-  
+
       // Expose the game object globally
       window.game = game;
-  
+
       return game;
     }
-  
+
     // Main game logic
     function startGame(game) {
       game.start(function () {
@@ -111,10 +120,10 @@
         if (window.location.search.includes('win')) {
           document.querySelector('.main').remove();
         }
-  
+
         // Set game background
         game.setBackground('#000000');
-  
+
         // Player creation logic
         let isSubWindow = window.location.search.includes('win');
         if (!isSubWindow) {
@@ -124,24 +133,24 @@
         }
       });
     }
-  
+
     // Function to create a new player
     function createPlayer(game) {
       let currentPlayer = game.make().Player().x(40).y(20).createEntity();
       let globalPosition = calculateGlobalPosition(currentPlayer);
-  
+
       // Equip the player and save its position globally
       game.updateEntity(currentPlayer.id, {
         meta: { equippedItems: [{ plugin: 'bullet', method: 'fireBullet' }] }
       });
       localStorage.setItem('mantra-currentPlayer', JSON.stringify(globalPosition));
-  
+
       // Set Hexapod target
       if (game.systems.hexapod) {
         game.systems.hexapod.setTarget(globalPosition);
       }
     }
-  
+
     // Function to calculate global position
     function calculateGlobalPosition(currentPlayer) {
       return {
@@ -149,7 +158,7 @@
         y: currentPlayer.position.y - window.screenY
       };
     }
-  
+
     // Function to recreate player from saved state
     function recreatePlayer(game) {
       let savedPlayer = JSON.parse(localStorage.getItem('mantra-currentPlayer'));
@@ -157,7 +166,7 @@
         // game.make().Hexapod({ target: savedPlayer }).repeat(6).createEntity();
       }
     }
-  
+
     // DOM content loaded event listener
     document.addEventListener('DOMContentLoaded', (event) => {
       // Alert for touch devices
@@ -168,18 +177,18 @@
           localStorage.setItem('crosswindow-touch-warning', true);
         }
       }
-  
+
       // Click event listener for .helpLabel
       document.querySelector('.helpLabel').addEventListener('click', function () {
         document.querySelector('.main').style.display = 'none';
       });
-  
+
       // Initialize and start the game
       let game = initializeGame();
       startGame(game);
     });
   </script>
-  
+
 
   <div class="main">
 
@@ -192,14 +201,14 @@
 
 
       <p class="helpText">
-        Click the top button bar to open <code>new CrossWindow()</code><br /><br/>
+        Click the top button bar to open <code>new CrossWindow()</code><br /><br />
         Each new <code>CrossWindow</code> will have its own <code>Mantra.js</code> game instance<br />
       </p>
       <h2>Controls</h2>
       <p>
-        WASD to move the player<br />
-        LEFT MOUSE TO MOVE - RIGHT MOUSE TO SHOOT<br />
-        USB GAMEPAD SUPPORTED
+        WASD to move the player. SPACE to shoot.<br />
+        LEFT MOUSE to move § RIGHT MOUSE to shoot<br />
+        USB Gamepad Supported
       </p>
 
 
@@ -208,15 +217,18 @@
         <label class="helpLabel" for="hideHelp" title="Hides helper text">Help
           <input type="checkbox" id="hideHelp" checked />
         </label>
-  
-      </h3>
-      <span>
-        <a href="https://github.com/yantra-core/CrossWindow.js">Github Source</a>
-      </span>
 
-      <span class="switchExample">
-        <a href="https://yantra.gg/crosswindow/simple">Switch to Simple Example</a>
-      </span>
+      </h3>
+      <div class="exampleLinks">
+
+        <span>
+          <a href="https://github.com/yantra-core/CrossWindow.js">Github Source</a>
+        </span>
+  
+        <span class="switchExample">
+          <a href="https://yantra.gg/crosswindow/simple">Switch to Simple Example</a>
+        </span>
+      </div>
 
 
     </div>

@@ -10,7 +10,7 @@
   <script src="./crosswindow.debugger.js"></script>
 
   <style>
-       .main {
+    .main {
       position: relative;
       display: flex;
       justify-content: center;
@@ -18,7 +18,6 @@
       text-align: center;
       flex-direction: column;
     }
-
 
     #openWindowButtons button {
       position: fixed;
@@ -35,7 +34,7 @@
       /* Offset the button back by its own half width and height to center it */
     }
 
-    #openWindowButtons h2  {
+    #openWindowButtons h2 {
       position: fixed;
       padding: 20px;
       font-size: 24px;
@@ -50,16 +49,14 @@
     .main a {
       font-size: 24px;
     }
-
-
   </style>
-  
+
 </head>
 
 <body>
   <script>
 
-function isTouchDevice() {
+    function isTouchDevice() {
       return 'ontouchstart' in window || navigator.maxTouchPoints;
     }
 
@@ -80,7 +77,7 @@ function isTouchDevice() {
         showPositionLegend: true,
         showOpenWindowButton: true,
         showExamplesBar: false,
-        windowBoxStyle: {
+        windowBoxStyle: { // TODO: move to css class
           "border": "2px solid white",
           "backgroundColor": "black",
           "borderStyle": "dashed",
@@ -117,51 +114,108 @@ function isTouchDevice() {
         });
       });
 
-      // TODO: we could have nice little divs for each of these which are displaying the data
-      // as it comes in, be sure to truncate the DOM content as it comes in so we don't get a memory leak
-      // TODO: add all events from CrossWindow.js
+      let output = document.getElementById('messageOutput');
+
+
+      // Each time a window is opened
+      crosswindow.on('windowOpened', function (otherWindow) {
+
+        console.log('windowOpened', crosswindow);
+        output.value += 'windowOpened: ' + JSON.stringify(otherWindow) + '\n';
+
+        // send a hello message to the newly opened window
+        otherWindow.postMessage({
+          type: 'hello',
+          message: 'Hello from ' + crosswindow.windowId
+        })
+      });
+
+      // Each time a window is closed
       crosswindow.on('windowClosed', function (currentWindowMetadata) {
-        // console.log('windowClosed', currentWindowMetadata);
+        console.log('windowClosed', currentWindowMetadata);
+        output.value += 'windowClosed: ' + JSON.stringify(currentWindowMetadata) + '\n';
       });
 
+      // Each time a window is changed
       crosswindow.on('windowChanged', function (currentWindowMetadata) {
-        // console.log('windowChanged', currentWindowMetadata);
+        console.log('windowChanged', currentWindowMetadata);
+        output.value += 'windowChanged: ' + JSON.stringify(currentWindowMetadata) + '\n';
       });
 
+      // Each time a message is received
       crosswindow.on('message', function (event) {
-        // console.log('message', event);
+        console.log('message', event);
+        output.value += JSON.stringify(event) + '\n';
       });
 
-      // if the url query contains win, hide the switchExample
-      if (window.location.search.includes('win')) {
-        let el = document.getElementById('switchExample');
-        if (el) {
-          el.remove();
-        }
-      }
+      // get all windows
+      let allCrossWindows = crosswindow.getWindows();
+      console.log('allCrossWindows', allCrossWindows);
+      output.value += 'allCrossWindows: ' + JSON.stringify(allCrossWindows) + '\n';
 
+      // get window by id
+      // can get ids when opening windows, calling, `crosswindow.getWindows()` or referencing the message event
+      let theWindow = crosswindow.getWindowById(crosswindow.windowId);
+      console.log('theWindow', theWindow);
+
+      // can postMessage
+      theWindow.postMessage({
+        type: 'hello',
+        message: 'Hello from self: ' + crosswindow.windowId
+      });
+
+      // get best window ( with spatial options )
+      // Creates an interval to ping screen position 1000,1000 to find closest non-self window
+      setInterval(function () {
+        let bestWindow = crosswindow.getBestWindow({
+          // the current position we are at in the current window
+          position: {
+            x: 100,
+            y: 100
+          },
+          // any position on or off the screen, using screenX and screenY as the reference
+          screenPosition: {
+            x: 1000,
+            y: 1000
+          }
+        });
+
+        // console.log('bestWindow', bestWindow)
+
+        // use BroadcastChannel postMessage to send a message to the best window
+        bestWindow.postMessage({
+          action: 'message',
+          position: {
+            x: 100,
+            y: 100
+          },
+          message: 'Hello from the main window'
+        })
+
+      }, 1000);
 
     });
 
   </script>
-<div class="main">
+  <div class="main">
 
-  <div>
-    <h1>Simple CrossWindow.js Demo</h1>
-  </div>
-  <div>
-    <a href="https://github.com/yantra-core/CrossWindow.js" target="_blank">Github Source</a>
-  </div>
-  <div id="switchExample">
-    <a href="/">Switch to Mantra.js Game Example</a>
-  </div>
-  <div id="openWindowButtons">
-    <button>Open Window</button>
-    <h2>Open more windows to get started.</h2>
-  </div>
-  
+    <div>
+      <h1>Simple CrossWindow.js Demo</h1>
+    </div>
+    <div>
+      <a href="https://github.com/yantra-core/CrossWindow.js" target="_blank">Github Source</a>
+    </div>
+    <div id="switchExample">
+      <a href="/">Switch to Mantra.js Game Example</a>
+    </div>
+    <div id="openWindowButtons">
+      <button>Open Window</button>
+      <h2>Open more windows to get started.</h2>
+    </div>
 
-</div>
+    <textarea id="messageOutput" style="width: 70%; height: 200px; margin-top: 20px;"></textarea>
+
+  </div>
 </body>
 
 </html>

@@ -10,6 +10,8 @@
   <script src="./worlds.mantra.js"></script>
   <script src="./crosswindow.js"></script>
   <script src="./crosswindow.debugger.js"></script>
+  <link rel="stylesheet" href="./crosswindow.debugger.css">
+
 
   <style>
     .main {
@@ -112,11 +114,19 @@
       game.config.mouseActionButton = 'RIGHT';
 
       game.use('Bullet'); // plugins at runtime
-      // TODO: have boomerang work cross window ( needs dynamic target tracker like Hexapod )
-      // game.use('Boomerang'); // plugins at runtime
+
+
+      // Additional game setup
       game.use('CrossWindow', {
-        debugger: true
-      })
+        debugger: {
+          showExamplesBar: true,
+          showOtherWindows: false,
+          showWindowLegend: false,
+          showPositionLegend: false,
+          showOpenWindowButton: false,
+        }
+      });
+
 
       //
       // All the cross winder events are listening, start the mantra game
@@ -154,22 +164,18 @@
         });
 
         // instruction text
-        game.createEntity({
-          type: 'TEXT',
-          body: false,
-          width: 700,
-          height: 50,
-          color: 0xffffff,
-          text: `Press any key to create a text entity`,
-          position: {
-            x: 0,
-            y: 0
-          },
-          style: {
+        game.make().Text()
+          .width(360)
+          .height(50)
+          .color(0xffffff)
+          .layout('center')
+          .text(`Press any key to create Text`)
+          .style({
             backgroundColor: 'black',
-            fontSize: '32px',
-          },
-        })
+            fontSize: '28px',
+          })
+          .createEntity();
+
 
         let currentWindows = game.systems.crosswindow.crosswindow.getWindows();
 

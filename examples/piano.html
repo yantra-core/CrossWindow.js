@@ -10,6 +10,7 @@
   <script src="./worlds.mantra.js"></script>
   <script src="./crosswindow.js"></script>
   <script src="./crosswindow.debugger.js"></script>
+  <link rel="stylesheet" href="./crosswindow.debugger.css">
 
   <style>
     .main {
@@ -48,7 +49,6 @@
 
   <script>
 
-
     function isTouchDevice() {
       return 'ontouchstart' in window || navigator.maxTouchPoints;
     }
@@ -81,13 +81,14 @@
       game.use('Bullet'); // plugins at runtime
       // TODO: have boomerang work cross window ( needs dynamic target tracker like Hexapod )
       // game.use('Boomerang'); // plugins at runtime
+      // Additional game setup
       game.use('CrossWindow', {
         debugger: {
           showExamplesBar: true,
           showOtherWindows: false,
           showWindowLegend: false,
           showPositionLegend: false,
-          showOpenWindowButton: true,
+          showOpenWindowButton: false,
         }
       });
 

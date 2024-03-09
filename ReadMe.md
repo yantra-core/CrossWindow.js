@@ -42,19 +42,21 @@ https://github.com/yantra-core/CrossWindow.js/assets/70011/55946c29-6ec6-4202-a3
 
 This simple demo runs CrossWindows's built-in debugger, showing the positional metadata of each connected browser window in real-time. Make sure to click "Open Window".
 
-### Mantra.js Game Demo ( ALPHA )
+### Mantra.js Game Demos ( ALPHA )
 
-*This is an Alpha Game version! It won't be perfect...yet*
+These demos feature the Mantra.js `CrossWindow` plugin, which handles teleporation logic and makes some assumptions about entity position and zoom scale.
 
 [https://yantra.gg/crosswindow](https://yantra.gg/crosswindow)
 
-https://github.com/yantra-core/CrossWindow.js/assets/70011/a2b4f208-1df8-4957-970e-333296a45a0c
+*This is an Alpha Game version! It won't be perfect...yet*
 
-This more featured demo contains a Mantra.js game instance, a Player with arrows, and some NPCS. Try opening a window and shooting some arrows.
+https://github.com/yantra-core/CrossWindow.js/assets/70011/a2b4f208-1df8-4957-970e-333296a45a0c
 
 In this example, the `Mantra` event emitter bridges to the `CrossWindow` event emitter. Each time a Game Entity exits the viewport, Mantra.js emits an event that CrossWindow.js sends to the best available open window based on the entity's exit position.
 
 ### Request Animation Loop Demo
+
+Simple example demonstrating use of `requestAnimation` loop to detect if element has left viewport and then sends it to the next best window. `setTimeout` or `setInterval` would also work.
 
 [https://yantra.gg/crosswindow/raf-loop](https://yantra.gg/crosswindow/raf-loop)
 

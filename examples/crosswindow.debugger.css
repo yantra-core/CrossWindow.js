@@ -1,0 +1,65 @@
+ /* Base styles for the button bar */
+ .debuggerButtonBar {
+  position: fixed;
+  top: 10px;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  display: flex;
+  flex-wrap: wrap;
+  /* Allow items to wrap */
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.5em;
+  background-color: rgba(50, 50, 50, 0.8);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Enhanced styles for buttons within the button bar */
+.debuggerButtonBar button {
+  padding: 0.5em 1em;
+  font-size: 1em;
+  font-weight: bold;
+  color: white;
+  background-color: rgba(0, 0, 0, 0.7);
+  /* Slightly lighter for contrast */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  /* Subtle border */
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.1s ease;
+  /* Smooth transitions */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  /* Subtle shadow for depth */
+}
+
+/* Hover and active states for buttons */
+.debuggerButtonBar button:hover,
+.debuggerButtonBar button:focus {
+  color: #d000ff;
+  background-color: rgba(0, 0, 0, 0.8);
+  /* Darker on hover/focus for feedback */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  /* Larger shadow for "lifted" effect */
+}
+
+.debuggerButtonBar button:active {
+  transform: translateY(2px);
+  opacity: 0.7;
+  /* "Press down" effect on click */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  /* Flatter shadow for "pressed" effect */
+}
+
+/* Responsive styles for smaller screens */
+@media (max-width: 1250px) {
+  .debuggerButtonBar button {
+    padding: 0.4em 0.8em !important;
+    /* Smaller padding for smaller screens */
+    font-size: 1em !important;
+    /* Smaller font size for smaller screens */
+  }
+}
