@@ -67,8 +67,8 @@
       }
 
       let crosswindow = new CW.CrossWindow(window, {
-        broadcastMouseEvents: false, // defaults to true
-        broadcastKeyboardEvents: false,
+        broadcastMouseEvents: true, // defaults to true
+        broadcastKeyboardEvents: true,
       });
 
       let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow, {
@@ -116,10 +116,8 @@
 
       let output = document.getElementById('messageOutput');
 
-
       // Each time a window is opened
       crosswindow.on('windowOpened', function (otherWindow) {
-
         console.log('windowOpened', crosswindow);
         output.value += 'windowOpened: ' + JSON.stringify(otherWindow) + '\n';
 
@@ -141,6 +139,19 @@
         console.log('windowChanged', currentWindowMetadata);
         output.value += 'windowChanged: ' + JSON.stringify(currentWindowMetadata) + '\n';
       });
+
+      // Generic Mouse and Keyboard events to listen to
+      // crosswindow will only recieve these events from *other* windows
+      crosswindow.on('keyEvent', function (event) {
+        console.log('keyEvent', event);
+        output.value += JSON.stringify(event) + '\n';
+      });
+      crosswindow.on('mouseEvent', function (event) {
+        // Remark: Commented out for example as it's too verbose
+        //console.log('mouseEvent', event);
+        // output.value += JSON.stringify(event) + '\n';
+      });
+      // ^^^ TODO: Adds granular mouse and keyboard events with 1:1 DOM event name mappings
 
       // Each time a message is received
       crosswindow.on('message', function (event) {
