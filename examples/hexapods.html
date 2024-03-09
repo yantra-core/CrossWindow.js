@@ -114,14 +114,8 @@
   
         // Set game background
         game.setBackground('#000000');
-  
-        // Player creation logic
-        let isSubWindow = window.location.search.includes('win');
-        if (!isSubWindow) {
-          createPlayer(game);
-        } else {
-          recreatePlayer(game);
-        }
+        createHexapods(game);
+
       });
     }
   
@@ -151,10 +145,10 @@
     }
   
     // Function to recreate player from saved state
-    function recreatePlayer(game) {
+    function createHexapods(game) {
       let savedPlayer = JSON.parse(localStorage.getItem('mantra-currentPlayer'));
       if (savedPlayer) {
-        // game.make().Hexapod({ target: savedPlayer }).repeat(6).createEntity();
+        game.make().Hexapod({ target: savedPlayer }).repeat(6).createEntity();
       }
     }
   
@@ -185,12 +179,13 @@
 
     <div>
       <h1>CrossWindow.js + Mantra.js</h1>
-      <h3>Move between windows by travelling to the edge of the screen</h3>
+    </div>
+    <div class="links">
 
     </div>
     <div class="help">
 
-
+     
       <p class="helpText">
         Click the top button bar to open <code>new CrossWindow()</code><br /><br/>
         Each new <code>CrossWindow</code> will have its own <code>Mantra.js</code> game instance<br />
@@ -201,6 +196,7 @@
         LEFT MOUSE TO MOVE - RIGHT MOUSE TO SHOOT<br />
         USB GAMEPAD SUPPORTED
       </p>
+      <h3>Move between windows by travelling to the edge of the screen</h3>
 
 
       <h3>

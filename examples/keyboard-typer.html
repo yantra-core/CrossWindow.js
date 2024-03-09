@@ -131,10 +131,10 @@
           let randomVX = Math.random() * 2 - 1;
           game.createEntity({
             type: 'TEXT',
-            width: 70,
+            width: 40,
             color: 0xffffff,
-            lifetime: 7777,
-            height: 50,
+            lifetime: 3333,
+            height: 30,
             text: `${event.key}`,
             position: {
               x: randomX,
@@ -145,7 +145,7 @@
               y: -2
             },
             style: { // CSS properties supported
-              fontSize: '44px',
+              fontSize: '22px',
               textAlign: 'center',
               textShadow: '0 0 5px black',
               backgroundColor: game.randomColor('hex')
@@ -167,10 +167,9 @@
           },
           style: {
             backgroundColor: 'black',
-            fontSize: '44px',
+            fontSize: '32px',
           },
         })
-
 
         let currentWindows = game.systems.crosswindow.crosswindow.getWindows();
 

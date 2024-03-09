@@ -11,10 +11,10 @@
   <script src="./crosswindow.js"></script>
   <script src="./crosswindow.debugger.js"></script>
 
+
   <style>
     .main {
       position: relative;
-      /* Makes .main the reference for absolutely positioned children */
       display: flex;
       justify-content: center;
       align-items: center;
@@ -27,20 +27,32 @@
 
     .main a {
       font-size: 24px;
-      color: white
+      color: white;
     }
 
     .links div {
       padding: 0.4em;
     }
 
-    .help {
-      /* should appear at the bottom 30% of screen */
-      position: relative;
-      top: 100px;
-      padding: 1em;
+    /* Custom styles for the color selects */
+    .color-select {
+      position: fixed; /* Fixed positioning */
+      padding: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      z-index: 9999;
+      transform: translateY(50%); /* Adjust for a slight downward position */
     }
 
+    #fountAColorSelect {
+      top: 55%;
+      left: 35%; /* Slightly off to the left from the center */
+    }
+
+    #fountBColorSelect {
+      top: 55%;
+      right: 35%; /* Slightly off to the right from the center */
+    }
   </style>
 </head>
 
@@ -62,11 +74,15 @@
       if (context.target.type === 'PARTICLE' && pair.isActive !== false) {
         const colorA = context.target.color;
         const colorB = context.owner.color;
-        if (colorA !== colorB) {
+        if (colorA !== colorB && game.tick - context.target.ctick > 100) {
           game.removeEntity(context.target.id);
-          const mixed = mixColors(colorA, colorB);
+          let configA = game.make().color(colorA).build();
+          let configB = game.make().color(colorB).build();
+
+          let mixed = game.make().mix(configA).mix(configB).build();
+          
           game.updateEntity(context.owner.id, {
-            color: mixed,
+            color: mixed.color,
             size: { width: context.owner.size.width * 1.1, height: context.owner.size.height * 1.1 }
           });
         }
@@ -82,19 +98,17 @@
     }
   
     function setupEventListeners() {
-      let el = document.getElementById('changeColor');
-      
-      if (el) {
-        el.addEventListener('change', event => {
-        color = event.target.value;
-        updateEntitiesColor(color);
+      document.getElementById('fountAColorSelect').addEventListener('change', function (event) {
+        const color = event.target.value;
+        const fountA = game.getEntityByName('fountA');
+        game.updateEntity(fountA.id, { color: color });
       });
-  
-      document.querySelectorAll('#openWindowButtons button').forEach(button => {
-        button.addEventListener('click', () => openNewWindow(color));
+
+      document.getElementById('fountBColorSelect').addEventListener('change', function (event) {
+        const color = event.target.value;
+        const fountB = game.getEntityByName('fountB');
+        game.updateEntity(fountB.id, { color: color });
       });
-    
-      }
      }
   
     function updateEntitiesColor(color) {
@@ -133,7 +147,7 @@
       });
   
       configureGame(game);
-      setupEventListeners();
+      // setupEventListeners();
       initializeEntities(game, color);
     });
   
@@ -175,13 +189,14 @@
           .color(color)
           .isStatic(true)
           .size(8, 8)
+          .radius(16)
           .position(index ? 50 : -50, 0)
           .createEntity();
       });
     }
   
     function createGravityWells(game) {
-      const gwConfig = game.make().GravityWell().color('red').size(4).isStatic(true).isSensor(true);
+      const gwConfig = game.make().GravityWell().color('white').size(4).radius(8).isStatic(true).isSensor(true);
       gwConfig.position(0, -100).createEntity();
       gwConfig.position(0, 100).createEntity();
     }
@@ -199,32 +214,6 @@
     }
   
   </script>
-  
-  <div class="main">
-
-    <div>
-      <h1>CrossWindow.js + Mantra.js</h1>
-    </div>
-    <div class="links">
-      <div>
-        <a href="https://github.com/yantra-core/CrossWindow.js">Github Source</a>
-      </div>
-      <div class="switchExample">
-        <a href="https://yantra.gg/crosswindow/simple">Switch to Simple Example</a>
-      </div>
-
-    </div>
-    <!-- let royGBivHex = ['#FF0000', '#FFA500', '#FFFF00', '#008000', '#0000FF', '#4B0082', '#EE82EE']; -->
-    <select id="changeColor">
-      <option value="#FF0000">Red</option>
-      <option value="#FFA500">Orange</option>
-      <option value="#FFFF00">Yellow</option>
-      <option value="#008000">Green</option>
-      <option value="#0000FF">Blue</option>
-      <option value="#4B0082">Indigo</option>
-      <option value="#EE82EE">Violet</option>
-    </select>
-  </div>
 
 </body>
 

@@ -10,9 +10,8 @@
   <script src="./crosswindow.debugger.js"></script>
 
   <style>
-    .main {
+       .main {
       position: relative;
-      /* Makes .main the reference for absolutely positioned children */
       display: flex;
       justify-content: center;
       align-items: center;
@@ -20,11 +19,8 @@
       flex-direction: column;
     }
 
-    .main a {
-      font-size: 24px;
-    }
 
-    button {
+    #openWindowButtons button {
       position: fixed;
       /* Use fixed positioning for center alignment regardless of scrolling */
       padding: 20px;
@@ -39,13 +35,25 @@
       /* Offset the button back by its own half width and height to center it */
     }
 
-    .switchExample a {
+    #openWindowButtons h2  {
+      position: fixed;
+      padding: 20px;
+      font-size: 24px;
+      cursor: pointer;
       z-index: 9999;
-      padding: 0.5em;
-      font-size: 0.8em;
+      top: 60%;
+      left: 50%;
+      transform: translate(-50%, -50%);
     }
 
+
+    .main a {
+      font-size: 24px;
+    }
+
+
   </style>
+  
 </head>
 
 <body>
@@ -67,6 +75,11 @@ function isTouchDevice() {
       });
 
       let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow, {
+        showOtherWindows: true,
+        showWindowLegend: true,
+        showPositionLegend: true,
+        showOpenWindowButton: true,
+        showExamplesBar: false,
         windowBoxStyle: {
           "border": "2px solid white",
           "backgroundColor": "black",
@@ -119,6 +132,15 @@ function isTouchDevice() {
         // console.log('message', event);
       });
 
+      // if the url query contains win, hide the switchExample
+      if (window.location.search.includes('win')) {
+        let el = document.getElementById('switchExample');
+        if (el) {
+          el.remove();
+        }
+      }
+
+
     });
 
   </script>
@@ -128,15 +150,16 @@ function isTouchDevice() {
     <h1>Simple CrossWindow.js Demo</h1>
   </div>
   <div>
-    <a href="https://github.com/yantra-core/CrossWindow.js">Github Source</a>
+    <a href="https://github.com/yantra-core/CrossWindow.js" target="_blank">Github Source</a>
   </div>
-  <div class="switchExample">
-    <a href="https://yantra.gg/crosswindow">Switch to Mantra.js Game Example</a>
+  <div id="switchExample">
+    <a href="/">Switch to Mantra.js Game Example</a>
   </div>
-
   <div id="openWindowButtons">
     <button>Open Window</button>
+    <h2>Open more windows to get started.</h2>
   </div>
+  
 
 </div>
 </body>

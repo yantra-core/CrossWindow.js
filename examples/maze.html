@@ -113,6 +113,8 @@
         plugins: [
           'Bullet',
           'Button',
+          'Coin',
+          'Hexapod',
           'Checkbox',
           'Container',
           'FlashMessage',
@@ -120,7 +122,6 @@
           'Radio',
           'RBush', // Required for Infinite Tiles
           'Select',
-          'SwitchGraphics',
           'Tile',
           'TileMap'
         ]
@@ -160,6 +161,15 @@
         createPlayer(game);
 
         generateTerrain(game); // Generate initial terrain
+
+        // create some demon npcs in center of maze
+        let demonConfig = game.make().Hexapod().texture('demon');
+
+        demonConfig.position(-50, 0).createEntity();
+        demonConfig.position(150, 150).createEntity();
+        demonConfig.position(0, 150).createEntity();
+        demonConfig.position(0, -100).createEntity();
+
       });
     }
 
@@ -172,8 +182,12 @@
     // Create maze selector dropdown
     function createMazeSelector(game) {
       let mazeSelector = game.make().name('mazeSelector').Select();
+      mazeSelector.style({
+        position: 'absolute'
+      });
       mazeSelector.meta({ options: getMazeOptions(game.mazes) });
       mazeSelector.position(-40, 130, 11111);
+
       mazeSelector.afterUpdateEntity((context) => {
         if (context && context.value !== undefined) {
           console.log('Selected Terrain:', context.value);
@@ -190,6 +204,9 @@
       let regenButton = game.make().Button()
         .text('Regenerate Terrain').style({ fontSize: '10px' })
         .height(30)
+        .style({
+          position: 'absolute'
+        })
         .position(125, 95, 11111);
       regenButton.pointerdown(() => {
         let currentValue = mazeSelector.value || 'AldousBroder';
@@ -250,6 +267,8 @@
 
     // Create the player entity
     function createPlayer(game) {
+      // TODO: check localStorage for current player / player time
+      // TODO: figure out easy way to determine if player needed? mantra?
       game.make().Player().position(0, 0, 16).meta({
         equippedItems: [{ plugin: 'bullet', method: 'fireBullet' }]
       }).createEntity();
