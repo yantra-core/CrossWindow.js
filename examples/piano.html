@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>CrossWindow.js Demo</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A Javascript utility library for cross-window communication">
+  <script src="./mantra.js"></script>
+  <script src="./worlds.mantra.js"></script>
+  <script src="./crosswindow.js"></script>
+  <script src="./crosswindow.debugger.js"></script>
+
+  <style>
+    .main {
+      position: relative;
+      /* Makes .main the reference for absolutely positioned children */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      flex-direction: column;
+      color: white;
+      top: 20%;
+      overflow: auto;
+    }
+
+    .main a {
+      font-size: 24px;
+      color: white
+    }
+
+    .links div {
+      padding: 0.4em;
+    }
+
+    .help {
+      /* should appear at the bottom 30% of screen */
+      position: relative;
+      top: 100px;
+      padding: 1em;
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <script>
+
+
+    function isTouchDevice() {
+      return 'ontouchstart' in window || navigator.maxTouchPoints;
+    }
+
+    document.addEventListener('DOMContentLoaded', (event) => {
+      if (isTouchDevice()) {
+        alert('Please note CrossWindow multi-window demo is not optimized for touch devices.');
+      }
+
+      let game = new MANTRA.Game({
+        graphics: ['css'], // array enum, 'babylon', 'css', 'three'
+        // Plugins at construction
+        plugins: ['SwitchGraphics', 'Tone', 'Text', 'Player', 'Block', 'Border', 'Lifetime', 'RBush', 'Key', 'Gamepad', 'Bullet'],
+        width: 400,
+        height: 300,
+        warnNonYantraGameRoot: true,
+        disableContextMenu: false,
+        gameRoot: 'http://192.168.1.80:7777'
+      });
+
+      game.config.emitKeyboardInputsEvents = true;
+      window.game = game;
+      game.config.entityEmitsViewportExitEvent = true;
+
+      // Movements with right click, switch default left-click-to-move behavior
+      game.config.mouseMovementButton = 'LEFT';
+      // Actions with left click
+      game.config.mouseActionButton = 'RIGHT';
+
+      game.use('Bullet'); // plugins at runtime
+      // TODO: have boomerang work cross window ( needs dynamic target tracker like Hexapod )
+      // game.use('Boomerang'); // plugins at runtime
+      game.use('CrossWindow', {
+        debugger: {
+          showExamplesBar: true,
+          showOtherWindows: false,
+          showWindowLegend: false,
+          showPositionLegend: false,
+          showOpenWindowButton: true,
+        }
+      });
+
+      //
+      // All the cross winder events are listening, start the mantra game
+      //
+      game.start(function () {
+
+        createPiano(game, {
+          width: 1200,
+          height: 200,
+          position: {
+            x: -600,
+            y: 0
+          }
+        });
+
+        game.on('pointerDown', (entity) => {
+          if (entity.type === 'NOTE') {
+            game.playNote(entity.kind);
+          }
+        });
+
+
+      });
+
+      let currentWindows = game.systems.crosswindow.crosswindow.getWindows();
+
+      // check if 'win' exists as query string variable, if no, so player
+      // if not, create player
+      let isSubWindow = window.location.search.includes('win');
+      if (!isSubWindow) {
+        let currentPlayer = game.make().Player().isSensor().createEntity();
+        // set currentPlayer in localStorage so Hexapods can track it cross window
+        let globalPosition = {
+          x: currentPlayer.position.x - window.screenX,
+          y: currentPlayer.position.y - window.screenY
+        };
+
+        // TODO: make this a mantra helper
+        game.updateEntity(currentPlayer.id, {
+          meta: {
+            equippedItems: [{
+              plugin: 'bullet',
+              method: 'fireBullet'
+            }]
+          }
+        });
+
+
+        console.log('saving global', globalPosition);
+        localStorage.setItem('mantra-currentPlayer', JSON.stringify(globalPosition));
+        // update target
+        if (game.systems.hexapod) {
+          game.systems.hexapod.setTarget(globalPosition);
+        }
+
+
+      } else {
+
+        /*
+        let savedPlayer = JSON.parse(localStorage.getItem('mantra-currentPlayer'));
+ 
+        // alert(localStorage.getItem('mantra-currentPlayer'));
+ 
+        let target = null;
+        if (savedPlayer) {
+          target = savedPlayer;
+        }
+        game.make().Hexapod({
+          target: savedPlayer
+        }).repeat(6).createEntity();
+                */
+
+      }
+
+    });
+
+
+    function createPiano(game, config) {
+      const whiteKeys = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+      const blackKeys = ['C#', 'D#', 'F#', 'G#', 'A#'];
+      let xPosition = config.position.x;
+
+      // Calculate key widths based on total width and number of white keys
+      const totalWhiteKeys = 52; // 7 white keys per octave, 7.5 octaves
+      const keyWidth = config.width / totalWhiteKeys;
+      const blackKeyWidth = keyWidth / 2.5; // Black keys are usually narrower
+
+      const keyHeight = config.height;
+      const blackKeyHeight = keyHeight / 2;
+
+      for (let octave = 0; octave < 8; octave++) {
+        whiteKeys.forEach((note, index) => {
+          const key = note + octave;
+          game.createEntity({
+            type: 'NOTE',
+            kind: key,
+            color: 0xffffff, // White key color
+            style: {
+              borderRadius: '0px'
+            },
+            collisionStart: pianoKeyCollisionHandler,
+            width: keyWidth,
+            height: keyHeight,
+            isStatic: true,
+            isSensor: true,
+            position: {
+              x: xPosition,
+              y: config.position.y
+            }
+          });
+
+          /* TODO: add back, was having issue getting pointerDown event context
+          game.createEntity({
+            type: 'TEXT',
+            name: 'piano-roll-text',
+            kind: key,
+            text: key,
+            color: 0x000000,
+            style: {
+              fontSize: '10px',
+              textAlign: 'center',
+              zIndex: 999
+            },
+            body: false,
+            position: {
+              x: xPosition + (keyWidth * 2) + 5,
+              y: config.position.y + keyHeight,
+              z: 10
+            }
+          });
+          */
+
+          xPosition += keyWidth;
+
+          // Add black key after this white key, except after E and B
+          if (note !== 'E' && note !== 'B') {
+            const blackKey = blackKeys[index] + octave;
+            game.createEntity({
+              type: 'NOTE',
+              kind: blackKey,
+              color: 0xff0000, // Black key color
+              width: blackKeyWidth,
+              height: blackKeyHeight,
+              isStatic: true,
+              isSensor: true,
+              style: {
+                border: 'solid',
+                zIndex: 9999,
+                borderRadius: '0px'
+              },
+              position: {
+                x: xPosition - blackKeyWidth, // Position the black key in the middle of two white keys
+                y: config.position.y - blackKeyHeight / 2, // Slightly higher than white keys
+                z: 9990
+              }
+            });
+          }
+        });
+      }
+
+    }
+    function pianoKeyCollisionHandler(a, b, pair, context) {
+
+
+      let note = context.owner.kind;
+      game.playNote(note);
+      let ent = context.owner;
+
+      // Check if we have a timerCache entry for this entity
+      if (timerCache[ent.id]) {
+        // Clear existing timeout
+        clearTimeout(timerCache[ent.id].timer);
+
+        // Reset the color to the original color stored in timerCache
+        game.updateEntity({
+          id: ent.id,
+          color: timerCache[ent.id].originalColor
+        });
+      } else {
+        // If no entry in timerCache, create one and store the original color
+        timerCache[ent.id] = {
+          originalColor: ent.color
+        };
+      }
+
+      // Update the entity color to yellow
+      game.updateEntity({
+        id: ent.id,
+        color: 0xccff00
+      });
+
+      // Set a timeout to revert the color back to original
+      timerCache[ent.id].timer = setTimeout(() => {
+        game.updateEntity({
+          id: ent.id,
+          color: timerCache[ent.id].originalColor
+        });
+        // Optionally, you might want to clean up the timerCache entry
+        // delete timerCache[ent.id];
+      }, 222);
+    }
+
+    let timerCache = {};
+
+  </script>
+
+  <div class="main">
+
+    <div>
+      <h1>CrossWindow.js + Mantra.js</h1>
+    </div>
+    <div class="links">
+      <div>
+        <a href="https://github.com/yantra-core/CrossWindow.js">Github Source</a>
+      </div>
+      <div class="switchExample">
+        <a href="https://yantra.gg/crosswindow/simple">Switch to Simple Example</a>
+      </div>
+
+    </div>
+  
+  </div>
+
+</body>
+
+</html>

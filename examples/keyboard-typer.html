@@ -34,49 +34,8 @@
       padding: 0.4em;
     }
 
-    .help {
-      /* should appear at the bottom 30% of screen */
-      position: relative;
-      top: 100px;
-      padding: 1em;
-    }
+   
 
-    button {
-      position: absolute;
-      padding: 0.3em;
-      font-size: 1.5em;
-      height: 3em;
-      /* Responsive font size */
-      cursor: pointer;
-      z-index: 9999;
-      transition: background-color 0.2s;
-      /* Smooth transition for hover effect */
-    }
-
-    button:hover {
-      background-color: rgba(255, 255, 255, 0.2);
-      /* Change background on hover */
-    }
-
-    #openWindowButtons {
-      position: absolute;
-      top: 10px;
-      right: 160px;
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5em;
-      padding: 0.5em;
-      background-color: rgba(0, 0, 0, 0.5);
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-    }
-
-    .switchExample a {
-      z-index: 9999;
-      padding: 0.5em;
-      font-size: 1em;
-    }
   </style>
 </head>
 
@@ -132,32 +91,10 @@
         alert('Please note CrossWindow multi-window demo is not optimized for touch devices.');
       }
 
-      // bind to changeColor select
-      document.getElementById('changeColor').addEventListener('change', function (event) {
-        color = event.target.value;
-        game.flashMessage(color)
-
-        let fountA = game.getEntityByName('fountA');
-        let fountB = game.getEntityByName('fountB');
-
-        game.updateEntity(fountA.id, {
-          color: color,
-          metadata: {
-            unitConfig: {
-              color: color
-            }
-          },
-        });
-        game.updateEntity(fountB.id, {
-          color: color
-        });
-
-      });
-
       let game = new MANTRA.Game({
         graphics: ['css'], // array enum, 'babylon', 'css', 'three'
         // Plugins at construction
-        plugins: ['SwitchGraphics', 'UnitSpawner', 'Text', 'Player', 'Block', 'Border', 'Lifetime', 'RBush', 'Key', 'Gamepad', 'Bullet'],
+        plugins: ['UnitSpawner', 'Text', 'Player', 'Block', 'Border', 'Lifetime', 'RBush', 'Key', 'Gamepad', 'Bullet'],
         width: 400,
         height: 300,
         warnNonYantraGameRoot: true,
@@ -281,25 +218,7 @@
     <div>
       <h1>CrossWindow.js + Mantra.js</h1>
     </div>
-    <div class="links">
-      <div>
-        <a href="https://github.com/yantra-core/CrossWindow.js">Github Source</a>
-      </div>
-      <div class="switchExample">
-        <a href="https://yantra.gg/crosswindow/simple">Switch to Simple Example</a>
-      </div>
 
-    </div>
-    <!-- let royGBivHex = ['#FF0000', '#FFA500', '#FFFF00', '#008000', '#0000FF', '#4B0082', '#EE82EE']; -->
-    <select id="changeColor">
-      <option value="#FF0000">Red</option>
-      <option value="#FFA500">Orange</option>
-      <option value="#FFFF00">Yellow</option>
-      <option value="#008000">Green</option>
-      <option value="#0000FF">Blue</option>
-      <option value="#4B0082">Indigo</option>
-      <option value="#EE82EE">Violet</option>
-    </select>
   </div>
 
 </body>

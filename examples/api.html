@@ -21,16 +21,6 @@
       font-size: 24px;
     }
 
-    button {
-      position: fixed;
-      padding: 20px;
-      font-size: 24px;
-      cursor: pointer;
-      z-index: 9999;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-    }
   </style>
 </head>
 
@@ -47,7 +37,9 @@
     document.addEventListener('DOMContentLoaded', (event) => {
 
       let crosswindow = new CW.CrossWindow(window);
-      let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow);
+      let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow, {
+        // TODO: flatten these
+      });
 
       document.querySelectorAll('#openWindowButtons button').forEach(button => {
         button.addEventListener('click', () => {
@@ -67,25 +59,40 @@
         });
       });
 
-      
 
+      // get all windows
+      // array of windows
+
+      // get window by id
+      // can postMessage
+
+      // get best window ( no options )
+      // single window, can postMessage
+      
+      // get best window ( with spatial options )
+      // single window, can postMessage
+
+      // Each time a window is opened
       crosswindow.on('windowOpened', function (currentWindowMetadata) {
         console.log('windowOpened', currentWindowMetadata);
       });
 
-
+      // Each time a window is closed
       crosswindow.on('windowClosed', function (currentWindowMetadata) {
         console.log('windowClosed', currentWindowMetadata);
       });
 
+      // Each time a window is changed
       crosswindow.on('windowChanged', function (currentWindowMetadata) {
         // console.log('windowChanged', currentWindowMetadata);
       });
 
+      // Each time a message is received
       crosswindow.on('message', function (event) {
         // console.log('message', event);
       });
 
+      // Creates an interval to ping screen position 1000,1000 to find closest non-self window
       setInterval(function () {
         let bestWindow = crosswindow.getBestWindow({
           // the current position we are at in the current window

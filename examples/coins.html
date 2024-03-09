@@ -11,12 +11,7 @@
   <script src="./crosswindow.debugger.js"></script>
 
   <style>
-    body  {
-      overflow: auto;
-      height: 100vh;
-    }
     .main {
-      height: 100%;
       position: relative;
       /* Makes .main the reference for absolutely positioned children */
       display: flex;
@@ -25,6 +20,7 @@
       text-align: center;
       flex-direction: column;
       color: white;
+      top: 20%;
       overflow: auto;
     }
 
@@ -40,13 +36,8 @@
     .help {
       /* should appear at the bottom 30% of screen */
       position: relative;
-      top: 0px;
+      top: 100px;
       padding: 1em;
-    }
-
-    .helpText {
-      font-size: 1.2em;
-      text-align: center;
     }
 
 
@@ -65,46 +56,42 @@
     function isTouchDevice() {
       return 'ontouchstart' in window || navigator.maxTouchPoints;
     }
-  
+
     // Function to initialize the game
     function initializeGame() {
       // Game configuration
       let game = new MANTRA.Game({
         graphics: ['css'], // Graphics engine
-        plugins: ['Player', 'Hexapod', 'Tower', 'RBush', 'Key', 'Block', 'Collectable', 'Teleporter', 'Gamepad', 'Bullet'],
+        plugins: ['Player', 'Hexapod', 'Tower', 'Coin', 'RBush', 'Key', 'Block', 'Collectable', 'Teleporter', 'Gamepad', 'Bullet'],
         width: 400,
         height: 300,
         warnNonYantraGameRoot: false,
         disableContextMenu: false,
         gameRoot: 'http://192.168.1.80:7777'
       });
-  
+
       // Additional game setup
       game.use('CrossWindow', {
         debugger: {
-          showExamplesBar: true,
-          showOtherWindows: false,
-          showWindowLegend: false,
-          showPositionLegend: false,
-          showOpenWindowButton: false,
+          showExamplesBar: true
         }
       });
-  
+
       // Configure keyboard and mouse inputs
       game.config.emitKeyboardInputsEvents = true;
       game.config.entityEmitsViewportExitEvent = true;
       game.config.mouseMovementButton = 'LEFT'; // Move with right click
       game.config.mouseActionButton = 'RIGHT'; // Action with left click
-  
+
       // Add plugins at runtime
       game.use('Bullet');
-  
+
       // Expose the game object globally
       window.game = game;
-  
+
       return game;
     }
-  
+
     // Main game logic
     function startGame(game) {
       game.start(function () {
@@ -112,10 +99,17 @@
         if (window.location.search.includes('win')) {
           document.querySelector('.main').remove();
         }
-  
+
+        game.setGravity(0, 0.1);
+
+        // create 22 balls
+        let ballConfig = game.make().Coin().width(16).height(32).restitution(1).repeat(11).offset(10, 0);
+
+        ballConfig.createEntity();
+
         // Set game background
         game.setBackground('#000000');
-  
+
         // Player creation logic
         let isSubWindow = window.location.search.includes('win');
         if (!isSubWindow) {
@@ -125,24 +119,24 @@
         }
       });
     }
-  
+
     // Function to create a new player
     function createPlayer(game) {
-      let currentPlayer = game.make().Player().x(40).y(20).createEntity();
+      let currentPlayer = game.make().Player().createEntity();
       let globalPosition = calculateGlobalPosition(currentPlayer);
-  
+
       // Equip the player and save its position globally
       game.updateEntity(currentPlayer.id, {
         meta: { equippedItems: [{ plugin: 'bullet', method: 'fireBullet' }] }
       });
       localStorage.setItem('mantra-currentPlayer', JSON.stringify(globalPosition));
-  
+
       // Set Hexapod target
       if (game.systems.hexapod) {
         game.systems.hexapod.setTarget(globalPosition);
       }
     }
-  
+
     // Function to calculate global position
     function calculateGlobalPosition(currentPlayer) {
       return {
@@ -150,7 +144,7 @@
         y: currentPlayer.position.y - window.screenY
       };
     }
-  
+
     // Function to recreate player from saved state
     function recreatePlayer(game) {
       let savedPlayer = JSON.parse(localStorage.getItem('mantra-currentPlayer'));
@@ -158,29 +152,25 @@
         game.make().Hexapod({ target: savedPlayer }).repeat(6).createEntity();
       }
     }
-  
+
     // DOM content loaded event listener
     document.addEventListener('DOMContentLoaded', (event) => {
       // Alert for touch devices
       if (isTouchDevice()) {
-        // check local storage to see if warn has been shown
-        if (!localStorage.getItem('crosswindow-touch-warning')) {
-          alert('CrossWindow.js is intended for multi-window applications is not optimized for touch devices.');
-          localStorage.setItem('crosswindow-touch-warning', true);
-        }
+        alert('Please note CrossWindow multi-window demo is not optimized for touch devices.');
       }
-  
+
       // Click event listener for .helpLabel
       document.querySelector('.helpLabel').addEventListener('click', function () {
         document.querySelector('.main').style.display = 'none';
       });
-  
+
       // Initialize and start the game
       let game = initializeGame();
       startGame(game);
     });
   </script>
-  
+
 
   <div class="main">
 
@@ -191,14 +181,23 @@
       <div>
         <a href="https://github.com/yantra-core/CrossWindow.js">Github Source</a>
       </div>
+      <div class="switchExample">
+        <a href="https://yantra.gg/crosswindow/simple">Switch to Simple Example</a>
+      </div>
 
     </div>
     <div class="help">
 
-     
-      <p class="helpText">
-        Click the top button bar to open new CrossWindows<br />
+      <h3>
+
+        <label class="helpLabel" for="hideHelp" title="Hides helper text">Help
+          <input type="checkbox" id="hideHelp" checked />
+        </label>
+
+      </h3>
+      <p>Click the top-right button to open a new CrossWindow<br />
         Each new CrossWindow will have its own Mantra.js game instance<br />
+        Move between windows by travelling to the edge of the screen<br />
       </p>
       <h3>Controls</h3>
       <p>
@@ -206,21 +205,6 @@
         LEFT MOUSE TO MOVE - RIGHT MOUSE TO SHOOT<br />
         USB GAMEPAD SUPPORTED
       </p>
-      <h3>Move between windows by travelling to the edge of the screen</h3>
-
-
-      <h3>
-
-        <label class="helpLabel" for="hideHelp" title="Hides helper text">Help
-          <input type="checkbox" id="hideHelp" checked />
-        </label>
-  
-      </h3>
-      <span class="switchExample">
-        <a href="https://yantra.gg/crosswindow/simple">Switch to Simple Example</a>
-      </span>
-
-
     </div>
 
   </div>
