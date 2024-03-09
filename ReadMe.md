@@ -48,7 +48,7 @@ These demos feature the Mantra.js `CrossWindow` plugin, which handles teleporati
 
 [https://yantra.gg/crosswindow](https://yantra.gg/crosswindow)
 
-*This is an Alpha Game version! It won't be perfect...yet. Intersection events are in-progress in order to implement overlapping crosswindow teleportations.*
+*This is an Alpha Game version! It won't be perfect...yet. Intersection events are in-progress to better implement overlapping crosswindows.*
 
 https://github.com/yantra-core/CrossWindow.js/assets/70011/a2b4f208-1df8-4957-970e-333296a45a0c
 
@@ -172,12 +172,12 @@ npm install crosswindow
 
 # Features
 
-  - [✅] Opens and manages browser with Cross Window communications
-  - [✅] `getBestWindow(screenPosition)` for calculating "best" window for screen position
-  - [✅]  Optionally re-broadcast keyboard and mouse events to windows
-  - [🟡]  Intersection events for overlapping windows ( WIP needs demo )
-  - [❌]  Cardinal direction helpers for opening windows ( N,S,E,W )
-  - [❌]  Advanced windowing layouts ( cascade / tile / grid / etc )
+  - [✅] Offline cross-browser window messaging with registry
+  - [✅] Get "best" available window from relative position to screen position
+  - [✅] Optionally broadcast keyboard and mouse events to windows
+  - [🟡] Intersection events for overlapping windows ( WIP needs demo )
+  - [🟡] Cardinal direction helpers for window opening ( N,S,E,W )
+  - [❌] Advanced windowing layouts ( cascade / tile / grid / etc )
 
 # Detecting if an element has left the Viewport
 

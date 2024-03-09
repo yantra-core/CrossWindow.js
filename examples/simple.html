@@ -8,7 +8,6 @@
   <meta name="description" content="A Javascript utility library for cross-window communication">
   <script src="./crosswindow.js"></script>
   <script src="./crosswindow.debugger.js"></script>
-
   <style>
     .main {
       position: relative;
@@ -17,6 +16,10 @@
       align-items: center;
       text-align: center;
       flex-direction: column;
+    }
+
+    .main a {
+      font-size: 24px;
     }
 
     #openWindowButtons button {
@@ -45,12 +48,26 @@
       transform: translate(-50%, -50%);
     }
 
+    /* CrossWindowDebugger CSS style */
+    .crosswindow-preview-box {
+      border: 2px solid white;
+      background-color: black;
+      border-style: dashed;
+      border-width: 6px;
+      border-color: yellow;
+      color: white;
+      font-size: 20px;
+      position: absolute;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 8px;
+      z-index: 11111;
 
-    .main a {
-      font-size: 24px;
     }
   </style>
-
 </head>
 
 <body>
@@ -62,40 +79,28 @@
 
     document.addEventListener('DOMContentLoaded', (event) => {
 
+      // Touch devices / Mobile devices don't make much sense for this demo
       if (isTouchDevice()) {
         alert('Please note CrossWindow multi-window demo is not optimized for touch devices.');
       }
 
+      // Create a new CrossWindow instance using the current window
       let crosswindow = new CW.CrossWindow(window, {
-        broadcastMouseEvents: true, // defaults to true
-        broadcastKeyboardEvents: true,
+        broadcastMouseEvents: true,    // defaults true
+        broadcastKeyboardEvents: true, // defaults true
       });
 
+      // Creates a new CrossWindowDebugger instance
       let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow, {
         showOtherWindows: true,
         showWindowLegend: true,
         showPositionLegend: true,
         showOpenWindowButton: true,
         showExamplesBar: false,
-        windowBoxStyle: { // TODO: move to css class
-          "border": "2px solid white",
-          "backgroundColor": "black",
-          "borderStyle": "dashed",
-          "borderWidth": "6px",
-          "borderColor": "yellow",
-          "color": "white",
-          "fontSize": "20px",
-          "position": "absolute",
-          "boxSizing": "border-box",
-          "display": "flex",
-          "flexDirection": "column",
-          "justifyContent": "center",
-          "alignItems": "center",
-          "padding": "8px",
-          "zIndex": "11111"
-        }
+        customStyles: true // defaults false
       });
 
+      // When user clicks the button, open a new CrossWindow
       document.querySelectorAll('#openWindowButtons button').forEach(button => {
         button.addEventListener('click', () => {
           const windowWidth = window.innerWidth;
@@ -104,8 +109,8 @@
           const offsetY = window.screenY; // Current window's distance from the top edge of the screen
           let buffer = 10; // Define a buffer distance for the new window
           let top = offsetY, left = offsetX;
-          // Open new CrossWindow
-          crosswindow.open('simple.html', {
+          // Open new CrossWindow, win=true is arbitrary metadata, you may delegate on query string
+          crosswindow.open('simple.html?win=true', {
             width: windowWidth,
             height: windowHeight,
             top: top /*- window.outerHeight*/,
@@ -114,13 +119,13 @@
         });
       });
 
+      // Gets a reference to the output textarea
       let output = document.getElementById('messageOutput');
 
-      // Each time a window is opened
+      // "windowOpened" - Each time a window is opened
       crosswindow.on('windowOpened', function (otherWindow) {
         console.log('windowOpened', crosswindow);
         output.value += 'windowOpened: ' + JSON.stringify(otherWindow) + '\n';
-
         // send a hello message to the newly opened window
         otherWindow.postMessage({
           type: 'hello',
@@ -128,43 +133,46 @@
         })
       });
 
-      // Each time a window is closed
+      // "windowClosed" - Each time a window is closed
       crosswindow.on('windowClosed', function (currentWindowMetadata) {
         console.log('windowClosed', currentWindowMetadata);
         output.value += 'windowClosed: ' + JSON.stringify(currentWindowMetadata) + '\n';
       });
 
-      // Each time a window is changed
+      // "windowChanged" - Each time a window is changed
       crosswindow.on('windowChanged', function (currentWindowMetadata) {
         console.log('windowChanged', currentWindowMetadata);
         output.value += 'windowChanged: ' + JSON.stringify(currentWindowMetadata) + '\n';
       });
 
-      // Generic Mouse and Keyboard events to listen to
-      // crosswindow will only recieve these events from *other* windows
+      //
+      // Input events - crosswindow will only recieve these events from *other* windows
+      //
+      // "keyEvent" - Generic Keyboard event to listen to
       crosswindow.on('keyEvent', function (event) {
         console.log('keyEvent', event);
         output.value += JSON.stringify(event) + '\n';
       });
+      // "mouseEvent" - Generic Mouse event to listen to
       crosswindow.on('mouseEvent', function (event) {
         // Remark: Commented out for example as it's too verbose
         //console.log('mouseEvent', event);
         // output.value += JSON.stringify(event) + '\n';
       });
       // ^^^ TODO: Adds granular mouse and keyboard events with 1:1 DOM event name mappings
-
-      // Each time a message is received
+      
+      // "message" - Each time a message is received
       crosswindow.on('message', function (event) {
         console.log('message', event);
         output.value += JSON.stringify(event) + '\n';
       });
 
-      // get all windows
+      // "crosswindow.getWindows()" - get all windows
       let allCrossWindows = crosswindow.getWindows();
       console.log('allCrossWindows', allCrossWindows);
       output.value += 'allCrossWindows: ' + JSON.stringify(allCrossWindows) + '\n';
 
-      // get window by id
+      // "crosswindow.getWindowById(windowId)" - get window by id
       // can get ids when opening windows, calling, `crosswindow.getWindows()` or referencing the message event
       let theWindow = crosswindow.getWindowById(crosswindow.windowId);
       console.log('theWindow', theWindow);
@@ -175,32 +183,38 @@
         message: 'Hello from self: ' + crosswindow.windowId
       });
 
-      // get best window ( with spatial options )
-      // Creates an interval to ping screen position 1000,1000 to find closest non-self window
+      // Creates an interval that sends a message to the best window,
+      // based on requested screen position and current viewport position
       setInterval(function () {
         let bestWindow = crosswindow.getBestWindow({
           // the current position we are at in the current window
-          position: {
+          position: { // currentViewportPosition
             x: 100,
             y: 100
           },
           // any position on or off the screen, using screenX and screenY as the reference
-          screenPosition: {
+          screenPosition: { // requested screen position
             x: 1000,
             y: 1000
           }
         });
 
-        // console.log('bestWindow', bestWindow)
+        console.log('bestWindow', bestWindow)
 
         // use BroadcastChannel postMessage to send a message to the best window
         bestWindow.postMessage({
-          action: 'message',
-          position: {
+          // this is all arbitrary metadata
+          name: 'Bobby',
+          health: 99,
+          team: 'Discovery Channel',
+          // Inside our crosswindow.on('message', fn) handler we can add custom logic,
+          // for determining what to do with the data, such as creating a new entity.
+          // The Mantra demo uses previous position to determine entrance position
+          previousPosition: {
             x: 100,
             y: 100
           },
-          message: 'Hello from the main window'
+          message: 'Hello from ' + crosswindow.windowId
         })
 
       }, 1000);
@@ -209,7 +223,6 @@
 
   </script>
   <div class="main">
-
     <div>
       <h1>Simple CrossWindow.js Demo</h1>
     </div>
@@ -223,9 +236,7 @@
       <button>Open Window</button>
       <h2>Open more windows to get started.</h2>
     </div>
-
     <textarea id="messageOutput" style="width: 70%; height: 200px; margin-top: 20px;"></textarea>
-
   </div>
 </body>
 
