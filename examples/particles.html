@@ -198,6 +198,11 @@
   
     function createGravityWells(game) {
       const gwConfig = game.make().GravityWell().color('white').size(4).radius(8).isStatic(true).isSensor(true);
+      gwConfig.collisionStart((a, b, pair, context) => {
+        if (context.target.type !== 'PARTICLE') {
+          game.removeEntity(context.target.id);
+        }
+      });
       gwConfig.position(0, -100).createEntity();
       gwConfig.position(0, 100).createEntity();
     }

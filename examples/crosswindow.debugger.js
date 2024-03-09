@@ -36,18 +36,19 @@ var CrossWindowDebugger = exports["default"] = /*#__PURE__*/function () {
   function CrossWindowDebugger(crossWindowInstance) {
     var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
     _classCallCheck(this, CrossWindowDebugger);
-    this.showOtherWindows = true;
-    this.showWindowLegend = true;
-    this.showPositionLegend = true;
-    if (typeof options.showOtherWindows === 'boolean') {
-      this.showOtherWindows = options.showOtherWindows;
+    this.config = {
+      showOtherWindows: false,
+      showWindowLegend: false,
+      showPositionLegend: false,
+      showOpenWindowButton: false,
+      showExamplesBar: true
+    };
+    for (var key in this.config) {
+      if (typeof options[key] === 'boolean') {
+        this.config[key] = options[key];
+      }
     }
-    if (typeof options.showWindowLegend === 'boolean') {
-      this.showWindowLegend = options.showWindowLegend;
-    }
-    if (typeof options.showPositionLegend === 'boolean') {
-      this.showPositionLegend = options.showPositionLegend;
-    }
+    console.log('debugger using opts', 'config', this.config);
     this.initUI();
     this.updateUI();
     this.crossWindowInstance = crossWindowInstance;
@@ -74,6 +75,13 @@ var CrossWindowDebugger = exports["default"] = /*#__PURE__*/function () {
   _createClass(CrossWindowDebugger, [{
     key: "initUI",
     value: function initUI() {
+      //
+      // Examples bar
+      //
+      if (this.config.showExamplesBar) {
+        this.createExamplesBar();
+      }
+
       // Create and style windowsContainer
       var windowsContainer = document.createElement('div');
       windowsContainer.id = 'windowsContainer';
@@ -88,6 +96,13 @@ var CrossWindowDebugger = exports["default"] = /*#__PURE__*/function () {
         zIndex: '22222'
       });
       document.body.appendChild(windowsContainer);
+
+      //
+      // Open Window button
+      //
+      if (this.config.showOpenWindowButton) {
+        this.createOpenWindowButton();
+      }
 
       //
       // Cross Window Count
@@ -106,7 +121,7 @@ var CrossWindowDebugger = exports["default"] = /*#__PURE__*/function () {
         zIndex: '9999'
       });
       document.body.appendChild(crossWindowCount);
-      if (this.showWindowLegend) {
+      if (this.config.showWindowLegend) {
         // Create and style currentCrossWindow
         var currentCrossWindow = document.createElement('div');
         currentCrossWindow.id = 'currentCrossWindow';
@@ -154,28 +169,149 @@ var CrossWindowDebugger = exports["default"] = /*#__PURE__*/function () {
       }
     }
   }, {
+    key: "createExamplesBar",
+    value: function createExamplesBar() {
+      var _this = this;
+      var buttonBarContainer = document.createElement('div');
+      buttonBarContainer.id = 'debuggerButtonBar';
+      buttonBarContainer.classList.add('debuggerButtonBar');
+      this.buttonConfigs = this.buttonConfigs || [{
+        label: 'Home',
+        url: 'https://yantra.gg/crosswindow/'
+      }, {
+        label: 'Particles',
+        url: 'https://yantra.gg/crosswindow/particles'
+      }, {
+        label: 'Coins',
+        url: 'https://yantra.gg/crosswindow/coins'
+      }, {
+        label: 'Key Typer',
+        url: 'https://yantra.gg/crosswindow/keyboard-typer'
+      }, {
+        label: 'Piano',
+        url: 'https://yantra.gg/crosswindow/piano'
+      }, {
+        label: 'Hexapods',
+        url: 'https://yantra.gg/crosswindow/hexapods'
+      }, {
+        label: 'Maze',
+        url: 'https://yantra.gg/crosswindow/maze'
+      }];
+      // Iterate over button configurations to create buttons
+      this.buttonConfigs.forEach(function (config) {
+        var button = document.createElement('button');
+        button.textContent = config.label;
+        button.addEventListener('click', function () {
+          var windowWidth = window.innerWidth;
+          var windowHeight = window.outerHeight - 75;
+          var offsetX = window.screenX; // Current window's distance from the left edge of the screen
+          var offsetY = window.screenY; // Current window's distance from the top edge of the screen
+          var buffer = 10; // Define a buffer distance for the new window
+          var top = offsetY,
+            left = offsetX;
+          // for dev
+          config.url = config.url.replace('https://yantra.gg/crosswindow/', './');
+          _this.crossWindowInstance.open(config.url + "?win=true", {
+            width: windowWidth,
+            height: windowHeight,
+            top: top /*- window.outerHeight*/,
+            left: left + window.outerWidth
+          }, true);
+        });
+        buttonBarContainer.appendChild(button);
+      });
+
+      // Append the button bar container to the body
+      document.body.appendChild(buttonBarContainer);
+    }
+  }, {
+    key: "createOpenWindowButton",
+    value: function createOpenWindowButton() {
+      // Create the button container
+      var buttonContainer = document.createElement('div');
+      buttonContainer.id = 'openWindowButtons';
+      Object.assign(buttonContainer.style, {
+        position: 'absolute',
+        top: '10px',
+        right: '10px',
+        // Adjusted for demonstration
+        zIndex: '9999',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.5em',
+        padding: '0.5em',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        borderRadius: '8px',
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)'
+      });
+
+      // Create the button
+      var openWindowButton = document.createElement('button');
+      openWindowButton.textContent = 'Open Window';
+      buttonContainer.appendChild(openWindowButton);
+
+      // Append the button container to the body
+      document.body.appendChild(buttonContainer);
+
+      // Add the event listener to the button
+      this.setupOpenWindowButtonListener(openWindowButton);
+    }
+
+    // TODO: more configuration options here
+  }, {
+    key: "setupOpenWindowButtonListener",
+    value: function setupOpenWindowButtonListener(button) {
+      var _this2 = this;
+      button.addEventListener('click', function () {
+        var windowWidth = window.innerWidth;
+        var windowHeight = window.outerHeight - 75;
+        var offsetX = window.screenX;
+        var offsetY = window.screenY;
+        var buffer = 10; // Optional buffer
+        var top = offsetY + buffer;
+        var left = offsetX + window.outerWidth + buffer;
+
+        // Open new window
+        // get the current url from the window
+        var url = window.location.href;
+        // add ?win=true to the url
+        // if win=true is not already set
+        if (!url.includes('?win=true')) {
+          // the game
+          url += '?win=true';
+          // i win
+        }
+        _this2.crossWindowInstance.open(url, {
+          width: windowWidth,
+          height: windowHeight,
+          top: top,
+          left: left
+        }, true);
+      });
+    }
+  }, {
     key: "updateUI",
     value: function updateUI() {
-      var _this = this;
+      var _this3 = this;
       setInterval(function () {
-        var currentWindows = _this.crossWindowInstance.getCurrentWindows();
+        var currentWindows = _this3.crossWindowInstance.getCurrentWindows();
         var windowCountElement = document.getElementById('crossWindowCountValue');
         if (windowCountElement) {
           windowCountElement.innerText = Object.keys(currentWindows).length;
         }
         var windowIdElement = document.getElementById('crossWindowId');
         if (windowIdElement) {
-          windowIdElement.innerText = _this.crossWindowInstance.windowId.split('-')[1];
+          windowIdElement.innerText = _this3.crossWindowInstance.windowId.split('-')[1];
         }
         var windowPositionElement = document.getElementById('crossWindowPosition');
         if (windowPositionElement) {
           windowPositionElement.innerText = "x: ".concat(window.screenX, ", y: ").concat(window.screenY);
         }
-        if (_this.showOtherWindows) {
+        if (_this3.config.showOtherWindows) {
           // for each window updateOrCreateDebugContainer
           for (var windowId in currentWindows) {
             currentWindows[windowId].windowId = windowId;
-            _this.updateOrCreateDebugContainer(currentWindows[windowId]);
+            _this3.updateOrCreateDebugContainer(currentWindows[windowId]);
           }
         }
       }, 300);
@@ -209,7 +345,7 @@ var CrossWindowDebugger = exports["default"] = /*#__PURE__*/function () {
         windowBox.appendChild(windowIdSpan);
         container.appendChild(windowBox);
       }
-      var adjustedPosition = calculateAdjustedPosition(currentWindowMetadata);
+      var adjustedPosition = calculateAdjustedPosition(currentWindowMetadata.metadata);
 
       //console.log(currentWindowMetadata.windowId, this.windowId) 
       if (currentWindowMetadata.windowId === this.crossWindowInstance.windowId) {

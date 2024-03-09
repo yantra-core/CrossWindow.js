@@ -48,7 +48,7 @@ These demos feature the Mantra.js `CrossWindow` plugin, which handles teleporati
 
 [https://yantra.gg/crosswindow](https://yantra.gg/crosswindow)
 
-*This is an Alpha Game version! It won't be perfect...yet*
+*This is an Alpha Game version! It won't be perfect...yet. Intersection events are in-progress in order to implement overlapping crosswindow teleportations.*
 
 https://github.com/yantra-core/CrossWindow.js/assets/70011/a2b4f208-1df8-4957-970e-333296a45a0c
 
