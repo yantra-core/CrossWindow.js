@@ -120,23 +120,7 @@
       });
     }
   
-    // Function to create a new player
-    function createPlayer(game) {
-      let currentPlayer = game.make().Player().x(40).y(20).createEntity();
-      let globalPosition = calculateGlobalPosition(currentPlayer);
-  
-      // Equip the player and save its position globally
-      game.updateEntity(currentPlayer.id, {
-        meta: { equippedItems: [{ plugin: 'bullet', method: 'fireBullet' }] }
-      });
-      localStorage.setItem('mantra-currentPlayer', JSON.stringify(globalPosition));
-  
-      // Set Hexapod target
-      if (game.systems.hexapod) {
-        game.systems.hexapod.setTarget(globalPosition);
-      }
-    }
-  
+   
     // Function to calculate global position
     function calculateGlobalPosition(currentPlayer) {
       return {
@@ -174,9 +158,8 @@
       startGame(game);
     });
   </script>
-  
 
-  <div class="main">
+<div class="main">
 
     <div>
       <h1>CrossWindow.js + Mantra.js</h1>
@@ -185,7 +168,6 @@
 
     </div>
     <div class="help">
-
      
       <p class="helpText">
         Click the top button bar to open <code>new CrossWindow()</code><br /><br/>
@@ -198,7 +180,6 @@
         USB GAMEPAD SUPPORTED
       </p>
       <h3>Move between windows by travelling to the edge of the screen</h3>
-
 
       <h3>
 

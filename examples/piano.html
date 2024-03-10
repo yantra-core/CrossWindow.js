@@ -13,34 +13,8 @@
   <link rel="stylesheet" href="./crosswindow.debugger.css">
 
   <style>
-    .main {
-      position: relative;
-      /* Makes .main the reference for absolutely positioned children */
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      flex-direction: column;
-      color: white;
-      top: 20%;
-      overflow: auto;
-    }
-
-    .main a {
-      font-size: 24px;
-      color: white
-    }
-
-    .links div {
-      padding: 0.4em;
-    }
-
-    .help {
-      /* should appear at the bottom 30% of screen */
-      position: relative;
-      top: 100px;
-      padding: 1em;
-    }
+  
+  
 
   </style>
 </head>
@@ -61,7 +35,7 @@
       let game = new MANTRA.Game({
         graphics: ['css'], // array enum, 'babylon', 'css', 'three'
         // Plugins at construction
-        plugins: ['Tone', 'Text', 'Player', 'Block', 'Border', 'Lifetime', 'RBush', 'Key', 'Gamepad', 'Bullet'],
+        plugins: ['Tone', 'Text', 'Player', 'Block', 'Border', 'RBush', 'Key', 'Gamepad', 'Bullet'],
         width: 400,
         height: 300,
         warnNonYantraGameRoot: true,
@@ -116,9 +90,7 @@
 
 
       });
-
-      let currentWindows = game.systems.crosswindow.crosswindow.getWindows();
-
+      console.log('gasdasd', game)
       // check if 'win' exists as query string variable, if no, so player
       // if not, create player
       let isSubWindow = window.location.search.includes('win');
@@ -194,6 +166,8 @@
               borderRadius: '0px'
             },
             collisionStart: pianoKeyCollisionHandler,
+            pointerdown: pianoMouseDownHandler,
+            pointermouse: pianoMousePointerMoveHandler,
             width: keyWidth,
             height: keyHeight,
             isStatic: true,
@@ -236,6 +210,9 @@
               color: 0xff0000, // Black key color
               width: blackKeyWidth,
               height: blackKeyHeight,
+              collisionStart: pianoKeyCollisionHandler,
+              pointerdown: pianoMouseDownHandler,
+              pointermouse: pianoMousePointerMoveHandler,
               isStatic: true,
               isSensor: true,
               style: {
@@ -254,6 +231,21 @@
       }
 
     }
+
+    // TODO: implement this for dragging to play notes
+    function pianoMousePointerMoveHandler(context, event) {
+      // console.log('mouse move event', context)
+    }
+
+    function pianoMouseDownHandler(context, event) {
+      //let note = event.target.dataset.note;
+      //game.playNote(note);
+      // console.log('mouse event', context)
+      pianoKeyCollisionHandler(null, null, null, {
+        owner: context.target
+      });
+    }
+
     function pianoKeyCollisionHandler(a, b, pair, context) {
 
 
@@ -298,23 +290,6 @@
     let timerCache = {};
 
   </script>
-
-  <div class="main">
-
-    <div>
-      <h1>CrossWindow.js + Mantra.js</h1>
-    </div>
-    <div class="links">
-      <div>
-        <a href="https://github.com/yantra-core/CrossWindow.js">Github Source</a>
-      </div>
-      <div class="switchExample">
-        <a href="https://yantra.gg/crosswindow/simple">Switch to Simple Example</a>
-      </div>
-
-    </div>
-  
-  </div>
 
 </body>
 

@@ -42,42 +42,6 @@
       padding: 1em;
     }
 
-    button {
-      position: absolute;
-      padding: 0.3em;
-      font-size: 1.5em;
-      height: 3em;
-      /* Responsive font size */
-      cursor: pointer;
-      z-index: 9999;
-      transition: background-color 0.2s;
-      /* Smooth transition for hover effect */
-    }
-
-    button:hover {
-      background-color: rgba(255, 255, 255, 0.2);
-      /* Change background on hover */
-    }
-
-    #openWindowButtons {
-      position: absolute;
-      top: 10px;
-      right: 160px;
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5em;
-      padding: 0.5em;
-      background-color: rgba(0, 0, 0, 0.5);
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-    }
-
-    .switchExample a {
-      z-index: 9999;
-      padding: 0.5em;
-      font-size: 1em;
-    }
   </style>
 </head>
 
@@ -151,15 +115,19 @@
       game.start(() => {
         game.setBackground('black');
 
-
         let container = game.make().Container()
           .position(-50, -50, 1)
           .name('tilemap-container')
           .style({ display: 'none' })
           .createEntity();
 
-        setupUIComponents(game);
-        createPlayer(game);
+        // TODO: add these back in
+        // setupUIComponents(game);
+
+        // check to see if win is in the query string
+        if (!window.location.search.includes('win')) {
+          createPlayer(game);
+        }
 
         generateTerrain(game); // Generate initial terrain
 
@@ -183,11 +151,18 @@
     // Create maze selector dropdown
     function createMazeSelector(game) {
       let mazeSelector = game.make().name('mazeSelector').Select();
-      mazeSelector.style({
-        position: 'absolute'
-      });
+
+
+      mazeSelector.width(300)
+        .height(50)
+        .style({
+          position: 'absolute',
+          fontSize: '32px'
+        })
+
+
       mazeSelector.meta({ options: getMazeOptions(game.mazes) });
-      mazeSelector.position(-40, 130, 11111);
+      mazeSelector.position(-800, -300, 11111);
 
       mazeSelector.afterUpdateEntity((context) => {
         if (context && context.value !== undefined) {
@@ -204,11 +179,13 @@
     function createRegenerateButton(game, mazeSelector) {
       let regenButton = game.make().Button()
         .text('Regenerate Terrain').style({ fontSize: '10px' })
-        .height(30)
+        .width(300)
+        .height(50)
         .style({
-          position: 'absolute'
+          position: 'absolute',
+          fontSize: '32px'
         })
-        .position(125, 95, 11111);
+        .position(125, 375, 11111);
       regenButton.pointerdown(() => {
         let currentValue = mazeSelector.value || 'AldousBroder';
         console.log('Regenerating Terrain:', currentValue);
@@ -286,25 +263,6 @@
   </script>
 
 
-  <div id="openWindowButtons">
-    <button>Open Window</button>
-  </div>
-
-  <div class="main">
-
-    <div>
-      <h1>CrossWindow.js + Mantra.js</h1>
-    </div>
-    <div class="links">
-      <div>
-        <a href="https://github.com/yantra-core/CrossWindow.js">Github Source</a>
-      </div>
-      <div class="switchExample">
-        <a href="https://yantra.gg/crosswindow/simple">Switch to Simple Example</a>
-      </div>
-
-    </div>
-  </div>
 
 </body>
 
