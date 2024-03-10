@@ -12,28 +12,36 @@
   <link rel="stylesheet" href="./crosswindow.debugger.css">
 
   <style>
+    html,
     body {
+      height: 100%;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .content {
+      flex: 1;
       overflow: auto;
-      height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
 
     .main {
-      height: 100%;
-      position: relative;
-      /* Makes .main the reference for absolutely positioned children */
+      flex: 1;
       display: flex;
       justify-content: center;
       align-items: center;
       text-align: center;
       flex-direction: column;
       color: white;
-      overflow: auto;
       padding-top: 60px;
+      /* Adjust as needed */
     }
 
     .main a {
       font-size: 24px;
-      color: white
+      color: white;
     }
 
     .links div {
@@ -41,30 +49,33 @@
     }
 
     .help {
-      /* should appear at the bottom 30% of screen */
-      position: relative;
-      top: 0px;
-      padding-right: 20px;
       padding: 1em;
+      text-align: center;
     }
 
     .helpText {
       font-size: 1.2em;
-      text-align: center;
-    }
-
-
-    .switchExample a {
-      z-index: 9999;
-      padding: 0.5em;
     }
 
     .exampleLinks {
-      position: absolute;
-      right: 10px;
-      bottom: 80px;
+      padding: 20px 10px;
+      /* Adjust as needed */
+      background: #000;
+      /* Background color for better visibility */
+      text-align: center;
+      /* Center-align the links */
     }
- 
+
+    .exampleLinks a {
+      padding: 0.5em;
+      color: white;
+      /* Adjust color for visibility */
+    }
+
+    .helpLabel {
+      cursor: pointer;
+      color: white;
+    }
   </style>
 </head>
 
@@ -171,7 +182,7 @@
 
       }
     }
-  
+
 
     // Function to recreate player from saved state
     function recreatePlayer(game) {
@@ -204,45 +215,42 @@
   </script>
 
 
-  <div class="main">
 
-    <div>
-      <h1>CrossWindow.js + Mantra.js</h1>
-      <h3>Move between windows by travelling to the edge of the screen</h3>
-      <h4>Click the top button bar to open <code>new CrossWindow()</code></h4>
+  <div class="content">
 
-    </div>
-    <div class="help">
+    <div class="main">
 
-      <h4>This demo is ALPHA, and not perfect. Have fun.</h4>
+      <div>
+        <h1>CrossWindow.js + Mantra.js</h1>
+        <h3>Move between windows by travelling to the edge of the screen</h3>
+        <h4>Click the top button bar to open <code>new CrossWindow()</code></h4>
 
-      <p class="helpText">
-        Each new <code>CrossWindow</code> will have its own <code>Mantra.js</code> game instance<br />
-      </p>
-      <h2>Controls</h2>
-      <p>
-        WASD to move the player. SPACE to shoot.<br />
-        LEFT MOUSE to move § RIGHT MOUSE to shoot<br />
-        USB Gamepad Supported
-      </p>
+      </div>
+      <div class="help">
 
+        <h4>This demo is ALPHA, and not perfect. Have fun.</h4>
 
-      <h3>
-
-      
-
-      </h3>
+        <p class="helpText">
+          Each new <code>CrossWindow</code> will have its own <code>Mantra.js</code> game instance<br />
+        </p>
+        <h2>Controls</h2>
+        <p>
+          WASD to move the player. SPACE to shoot.<br />
+          LEFT MOUSE to move § RIGHT MOUSE to shoot<br />
+          USB Gamepad Supported
+        </p>
 
 
 
+      </div>
     </div>
     <div class="exampleLinks">
 
       <span class="help">
-      <label class="helpLabel" for="hideHelp" title="Hides helper text">Help
-        <input type="checkbox" id="hideHelp" checked />
-      </label>
-    </span>
+        <label class="helpLabel" for="hideHelp" title="Hides helper text">Help
+          <input type="checkbox" id="hideHelp" checked />
+        </label>
+      </span>
 
       <span>
         <a href="https://github.com/yantra-core/CrossWindow.js">Github Source</a>

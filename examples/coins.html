@@ -106,7 +106,7 @@
         // create 22 coins
         let coinConfig = game.make().Coin().x(-200).width(16).height(32).restitution(1); // .repeat(11).offset(10, 0); TODO: fix repeat + offset stacking incorrectly
         let ogX = coinConfig.config.position.x;
-        for (let i = 0; i < 22; i++) {
+        for (let i = 0; i < 12; i++) {
           coinConfig.x(ogX + i * 32);
           coinConfig.y(-100 + Math.random() * 100);
           coinConfig.createEntity();
