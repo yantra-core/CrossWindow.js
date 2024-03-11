@@ -41,7 +41,7 @@ var CrossWindowDebugger = exports["default"] = /*#__PURE__*/function () {
       showWindowLegend: false,
       showPositionLegend: false,
       showOpenWindowButton: false,
-      showExamplesBar: true,
+      showExamplesBar: false,
       customStyles: false
     };
     for (var key in this.config) {
