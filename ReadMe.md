@@ -4,8 +4,8 @@
   
 ![cross-window-debugger](https://github.com/yantra-core/CrossWindow.js/assets/70011/6b851631-d4cd-419d-897e-3153d3bf1fb0)
 
+![crosswindow-v7](https://github.com/yantra-core/CrossWindow.js/assets/70011/d6c4a335-6f96-45ce-bc96-b94143518226)
 
-![cross-window-mantra-3](https://github.com/yantra-core/CrossWindow.js/assets/70011/d243d930-f098-4b2e-9136-89ea1bbbc000)
 
 </h3>
 
@@ -66,7 +66,7 @@ These demos feature the Mantra.js `CrossWindow` plugin, which handles teleporati
 
 *This is an Alpha Game version! It won't be perfect...yet. Intersection events are in-progress to better implement overlapping crosswindows.*
 
-https://github.com/yantra-core/CrossWindow.js/assets/70011/a2b4f208-1df8-4957-970e-333296a45a0c
+https://github.com/yantra-core/CrossWindow.js/assets/70011/98cd90de-f226-43a6-a096-67cccffb3da7
 
 In this example, the `Mantra` event emitter bridges to the `CrossWindow` event emitter. Each time a Game Entity exits the viewport, Mantra.js emits an event that CrossWindow.js sends to the best available open window based on the entity's exit position.
 
