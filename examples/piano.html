@@ -7,7 +7,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="A Javascript utility library for cross-window communication">
   <script src="./mantra.js"></script>
-  <script src="./worlds.mantra.js"></script>
   <script src="./crosswindow.js"></script>
   <script src="./crosswindow.debugger.js"></script>
   <link rel="stylesheet" href="./crosswindow.debugger.css">
@@ -29,10 +28,10 @@
       let game = new MANTRA.Game({
         graphics: ['css'], // array enum, 'babylon', 'css', 'three'
         // Plugins at construction
-        plugins: ['Tone', 'Text', 'Player', 'Block', 'Border', 'RBush', 'Key', 'Gamepad', 'Bullet'],
+        plugins: ['Tone', 'Text', 'Player', 'Coin', 'Block', 'Border', 'RBush', 'Key', 'Gamepad', 'Bullet'],
         width: 400,
         height: 300,
-        disableContextMenu: true
+        disableContextMenu: true,
       });
 
       game.config.emitKeyboardInputsEvents = true;
@@ -80,13 +79,11 @@
           }
         });
 
-
-      });
-      console.log('gasdasd', game)
-      // check if 'win' exists as query string variable, if no, so player
+         // check if 'win' exists as query string variable, if no, so player
       // if not, create player
       let isSubWindow = window.location.search.includes('win');
       if (!isSubWindow) {
+
         let currentPlayer = game.make().Player().isSensor().createEntity();
         // set currentPlayer in localStorage so Hexapods can track it cross window
         let globalPosition = {
@@ -113,24 +110,12 @@
         }
 
 
-      } else {
+      } 
 
-        /*
-        let savedPlayer = JSON.parse(localStorage.getItem('mantra-currentPlayer'));
- 
-        // alert(localStorage.getItem('mantra-currentPlayer'));
- 
-        let target = null;
-        if (savedPlayer) {
-          target = savedPlayer;
-        }
-        game.make().Hexapod({
-          target: savedPlayer
-        }).repeat(6).createEntity();
-                */
 
-      }
 
+      });
+     
     });
 
 

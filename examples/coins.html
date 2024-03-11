@@ -66,7 +66,7 @@
         plugins: ['Player', 'Hexapod', 'Tower', 'Coin', 'RBush', 'Key', 'Block', 'Collectable', 'Teleporter', 'Gamepad', 'Bullet'],
         width: 400,
         height: 300,
-        disableContextMenu: true
+        disableContextMenu: true,
       });
 
       // Additional game setup
@@ -102,7 +102,7 @@
         game.setGravity(0, 0.1);
 
         // create 22 coins
-        let coinConfig = game.make().Coin().x(-200).width(16).height(32).restitution(1); // .repeat(11).offset(10, 0); TODO: fix repeat + offset stacking incorrectly
+        let coinConfig = game.make().Coin().maxSpeed(2).x(-200).width(16).height(32).restitution(1); // .repeat(11).offset(10, 0); TODO: fix repeat + offset stacking incorrectly
         let ogX = coinConfig.config.position.x;
         for (let i = 0; i < 12; i++) {
           coinConfig.x(ogX + i * 32);
