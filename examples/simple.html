@@ -168,6 +168,11 @@
         output.value += 'KeyEvent: ' + JSON.stringify(event, true, 2) + '\n';
       });
 
+      crosswindow.on('mouseEvent', function (event) {
+        // console.log('mouseEvent', event);
+        //output.value += 'MouseEvent: ' + JSON.stringify(event, true, 2) + '\n';
+      });
+
       // ^^^ TODO: Adds granular mouse and keyboard events with 1:1 DOM event name mappings
 
       // Event handler for messages received from other windows

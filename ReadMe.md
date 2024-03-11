@@ -161,6 +161,11 @@ npm install crosswindow
       output.value += 'KeyEvent: ' + JSON.stringify(event, true, 2) + '\n';
     });
 
+    // Event handler for mouse events received from other windows 
+    crosswindow.on('mouseEvent', function (event) {
+      // mouse events
+    });
+
     // Event handler for messages received from other windows
     crosswindow.on('message', function (event) {
       console.log('message', event);
@@ -172,7 +177,7 @@ npm install crosswindow
     console.log('allCrossWindows', allCrossWindows);
     output.value += 'All CrossWindows: ' + JSON.stringify(allCrossWindows, true, 2) + '\n';
 
-    // Demonstrate retrieving a specific window by ID and sending a message
+    // Retrieving a specific window by ID and sending a message
     let theWindow = crosswindow.getWindowById(crosswindow.windowId); // Get the current window by its ID
     console.log('theWindow', theWindow);
     if (theWindow) {
