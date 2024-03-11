@@ -838,8 +838,6 @@ function getBestWindow(entityData) {
   if (Object.keys(allWindowsMetadata).length === 0) {
     bestWindowId = this.windowId;
   }
-
-  // console.log('allWindowsMetadata', allWindowsMetadata, 'currentWindowPosition', currentWindowPosition, 'currentWindowSize', currentWindowSize, 'direction', direction, 'entityData', entityData, 'zoomScale', zoomScale)
   Object.entries(allWindowsMetadata).forEach(function (_ref) {
     var _ref2 = _slicedToArray(_ref, 2),
       windowId = _ref2[0],
@@ -883,6 +881,15 @@ function getBestWindow(entityData) {
   // If no suitable window is found in the preferred direction, use the fallback
   if (!bestWindowId && fallbackWindowId) {
     bestWindowId = fallbackWindowId;
+  }
+
+  // check to see if there were other windows available but found none, if so pick any that is not current
+  // Remark: This case should not happen, but was needed. we'll be able to remove this after adding tests
+  if (!bestWindowId && Object.keys(allWindowsMetadata).length > 1) {
+    // Remove the current window from consideration
+    delete allWindowsMetadata[this.windowId];
+    var newKeys = Object.keys(allWindowsMetadata);
+    bestWindowId = newKeys[0];
   }
   if (!bestWindowId) {
     bestWindowId = this.windowId;

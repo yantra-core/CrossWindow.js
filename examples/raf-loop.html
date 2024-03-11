@@ -50,11 +50,20 @@
   <script>
     document.addEventListener('DOMContentLoaded', (event) => {
 
-      let crosswindow = new CW.CrossWindow(window, {
-        broadcastMouseEvents: false, // defaults to true
-        broadcastKeyboardEvents: false,
+   // Initialize CrossWindow with the current window context and default event broadcasting settings
+   let crosswindow = new CW.CrossWindow(window, {
+        broadcastMouseEvents: false,    // Enable mouse event broadcasting across windows
+        broadcastKeyboardEvents: false, // Enable keyboard event broadcasting across windows
       });
-      let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow);
+
+      // Set up the CrossWindow debugger with visual aids for debugging and window management
+      let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow, {
+        showOtherWindows: true,        // Display other open windows in the debugger
+        showWindowLegend: true,        // Show legends for window identification
+        showPositionLegend: true,      // Show legends for window positions
+        showOpenWindowButton: true,    // Include a button to open new windows
+        showExamplesBar: false,        // Disable the examples bar for simplicity
+      });
 
       document.querySelectorAll('#openWindowButtons button').forEach(button => {
         button.addEventListener('click', () => {
@@ -87,13 +96,15 @@
         // console.log('windowChanged', currentWindowMetadata);
       });
 
-      crosswindow.on('message', function (data) {
+      crosswindow.on('message', function (event) {
+        let data = event.payload || event; // <-- Legacy API, fix this to uniform action/payload
+        console.log("DDDDD", data)
         // recreate the element based on data.position, data.style, data.id
         const element = document.createElement('div');
         element.id = data.id;
         element.style.position = 'absolute';
-        element.style.left = `${data.position.x}px`;
-        //element.style.left = 0;
+        // element.style.left = `${data.position.x}px`;
+        element.style.left = 0;
 
         // if the data.position.y has exceeded the window height, set to 0
         if (data.position.y > window.innerHeight) {
@@ -113,7 +124,7 @@
         function checkVisibility() {
           const element = document.getElementById(elementId);
           if (!element) {
-            console.warn(`Element with ID '${elementId}' not found.`);
+            // console.warn(`Element with ID '${elementId}' not found.`);
             requestAnimationFrame(checkVisibility); // Keep trying
             return;
           }
@@ -124,7 +135,7 @@
           const rect = element.getBoundingClientRect();
           const isVisible = rect.top < window.innerHeight && rect.bottom >= 0 && rect.left < window.innerWidth && rect.right >= 0;
           if (!isVisible) {
-            console.log(`Element with ID '${elementId}' has left the viewport.`);
+            console.log(`Element with ID '${elementId}' has left the viewport.`, rect.left, rect.top);
             // Perform any actions needed when the element is out of the viewport
             let bestWindow = crosswindow.getBestWindow({
               position: {
@@ -157,7 +168,6 @@
             // remove the entity
             element.remove();
 
-            // Make sure to handle bestWindow, e.g., open it or move the element to it.
           }
           requestAnimationFrame(checkVisibility); // Continue the loop
         }

@@ -131,6 +131,9 @@
         game.setBackground('#000000');
         game.setGravity(0, 2);
         game.on('keydown', function (event, key) {
+          if (typeof key === 'undefined') {
+            return;
+          }
           // random value between range of +- half game width from center
           let randomX = Math.random() * game.width - game.width / 2;
           let randomVX = Math.random() * 2 - 1;
