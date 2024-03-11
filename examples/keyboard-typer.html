@@ -89,14 +89,11 @@
 
 
     document.addEventListener('DOMContentLoaded', (event) => {
-      if (isTouchDevice()) {
-        alert('Please note CrossWindow multi-window demo is not optimized for touch devices.');
-      }
 
       let game = new MANTRA.Game({
         graphics: ['css'], // array enum, 'babylon', 'css', 'three'
         // Plugins at construction
-        plugins: ['UnitSpawner', 'Coin', 'Text', 'Player', 'Block', 'Border', 'Lifetime', 'RBush', 'Key', 'Gamepad', 'Bullet'],
+        plugins: ['UnitSpawner', 'Coin', 'Text', 'Player', 'Block', 'Border', 'Lifetime', 'RBush', 'Key', 'Gamepad', 'Bullet', 'Hexapod'],
         width: 400,
         height: 300,
         disableContextMenu: true
@@ -133,7 +130,7 @@
 
         game.setBackground('#000000');
         game.setGravity(0, 2);
-        game.on('keydown', function (event) {
+        game.on('keydown', function (event, key) {
           // random value between range of +- half game width from center
           let randomX = Math.random() * game.width - game.width / 2;
           let randomVX = Math.random() * 2 - 1;
@@ -143,7 +140,8 @@
             color: 0xffffff,
             lifetime: 3333,
             height: 30,
-            text: `${event.key}`,
+            maxSpeed: 2,
+            text: `${key}`,
             position: {
               x: randomX,
               y: -150
@@ -198,14 +196,12 @@
             }
           });
 
-
           console.log('saving global', globalPosition);
           localStorage.setItem('mantra-currentPlayer', JSON.stringify(globalPosition));
           // update target
           if (game.systems.hexapod) {
             game.systems.hexapod.setTarget(globalPosition);
           }
-
 
         }
 

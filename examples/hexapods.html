@@ -131,20 +131,12 @@
     function createHexapods(game) {
       let savedPlayer = JSON.parse(localStorage.getItem('mantra-currentPlayer'));
       if (savedPlayer) {
-        game.make().Hexapod({ target: savedPlayer }).repeat(6).createEntity();
+        game.make().Hexapod({ target: savedPlayer }).maxSpeed(3.5).repeat(6).createEntity();
       }
     }
   
     // DOM content loaded event listener
     document.addEventListener('DOMContentLoaded', (event) => {
-      // Alert for touch devices
-      if (isTouchDevice()) {
-        // check local storage to see if warn has been shown
-        if (!localStorage.getItem('crosswindow-touch-warning')) {
-          alert('CrossWindow.js is intended for multi-window applications is not optimized for touch devices.');
-          localStorage.setItem('crosswindow-touch-warning', true);
-        }
-      }
   
       // Click event listener for .helpLabel
       document.querySelector('.helpLabel').addEventListener('click', function () {

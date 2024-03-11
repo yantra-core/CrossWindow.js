@@ -16,16 +16,32 @@
   <a href="#contributing">Contributing</a>
 </h4>
 
+**Alpha Notice**
 
-A small utility library for cross-window communication using LocalStorage and BroadcastChannel.
+A small utility library for cross window browser communication.
 
 You can use CrossWindow.js to build applications that need to be aware of the positional metadata of other open browser windows. CrossWindow allows you to send spatially aware data messages to the "best" available window by ordinal value.
+
+# How
+
+  - Window Discovery and metadata handled by [LocalStorage](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage)
+  - Message broadcasting handled by [BroadcastChannel](https://developer.mozilla.org/en-US/docs/Web/API/BroadcastChannel)
+  - Window metadata is eventually consistent using Last-Write-Wins (LWW)
+
+# Features
+
+  - [✅] Offline cross-window browser messaging with registry
+  - [✅] Get "best" available window from relative position to screen position
+  - [✅] Optionally broadcast keyboard and mouse events to windows
+  - [🟡] Intersection events for overlapping windows
+  - [🟡] Cardinal direction helpers for window opening ( N,S,E,W )
+  - [❌] Advanced windowing layouts ( cascade / tile / grid / etc )
 
 **CDN Release Latest**
 | Files          | CDN                                         | Size |
 |---------------|--------------------------------------------------|-----------|
-| crosswindow.js    | [Link](https://yantra.gg/crosswindow.js)        | 44kb      |
-| crosswindow.min.js| [Link](https://yantra.gg/crosswindow.min.js)    | 22kb      |
+| crosswindow.js    | [Link](https://yantra.gg/crosswindow.js)        | 59kb      |
+| crosswindow.min.js| [Link](https://yantra.gg/crosswindow.min.js)    | 28kb      |
 
 ## Videos and Live Demos
 
@@ -77,81 +93,126 @@ npm install crosswindow
 <script src="http://yantra.gg/crosswindow.debugger.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', (event) => {
+    // Alert for touch device users because this demo is designed for non-touch, multi-window environments
+    if (isTouchDevice()) {
+      alert('CrossWindow.js is intended for multi-window applications and is not optimized for touch devices.');
+    }
 
+    // Initialize CrossWindow with the current window context and default event broadcasting settings
     let crosswindow = new CW.CrossWindow(window, {
-      broadcastKeyboardEvents: true,
-      broadcastMouseEvents: true
+      broadcastMouseEvents: true,    // Enable mouse event broadcasting across windows
+      broadcastKeyboardEvents: true, // Enable keyboard event broadcasting across windows
     });
 
+    // Set up the CrossWindow debugger with visual aids for debugging and window management
     let crossWindowDebugger = new CWDEBUG.CrossWindowDebugger(crosswindow, {
-      showOtherWindows: true,
-      showWindowLegend: true,
-      showWindowCount: true,
+      showOtherWindows: true,        // Display other open windows in the debugger
+      showWindowLegend: true,        // Show legends for window identification
+      showPositionLegend: true,      // Show legends for window positions
+      showOpenWindowButton: true,    // Include a button to open new windows
+      showExamplesBar: false,        // Disable the examples bar for simplicity
+      customStyles: true             // Apply custom styles to the debugger interface
     });
 
-    document.querySelectorAll('button').forEach(button => {
+    // Add click event listeners to buttons for opening new windows
+    document.querySelectorAll('#openWindowButtons button').forEach(button => {
       button.addEventListener('click', () => {
         const windowWidth = window.innerWidth;
         const windowHeight = window.outerHeight - 75;
-        const top = window.screenX;
-        const left = window.screenY;
+        const offsetX = window.screenX; // Horizontal position of the current window
+        const offsetY = window.screenY; // Vertical position of the current window
+        let buffer = 10; // Margin between newly opened windows and the current window
 
-        // Open new CrossWindow
-        crosswindow.open('this-page-or-another-crosswindow-page.html', {
+        // Open a new window next to the current one, passing 'win=true' as metadata in the URL
+        crosswindow.open('simple.html?win=true', {
           width: windowWidth,
           height: windowHeight,
-          top: top,
-          left: left + window.outerWidth, // opens to the right
+          top: offsetY,
+          left: offsetX + window.outerWidth + buffer,
         }, true);
-
       });
     });
 
+    // Reference to the output area for logging events and messages
+    let output = document.getElementById('messageOutput');
+
+    // Event handler for when a new window is opened
+    crosswindow.on('windowOpened', function (otherWindow) {
+      console.log('windowOpened', crosswindow);
+      output.value += 'windowOpened: ' + JSON.stringify(otherWindow, true, 2) + '\n';
+      // Send a greeting message to the newly opened window
+      otherWindow.postMessage({
+        type: 'hello',
+        message: 'Hello from ' + crosswindow.windowId
+      });
+    });
+
+    // Event handler for when a window is closed
     crosswindow.on('windowClosed', function (currentWindowMetadata) {
       console.log('windowClosed', currentWindowMetadata);
+      output.value += 'windowClosed: ' + JSON.stringify(currentWindowMetadata, true, 2) + '\n';
     });
 
+    // Event handler for when a window's state changes (e.g., moved or resized)
     crosswindow.on('windowChanged', function (currentWindowMetadata) {
-      // console.log('windowChanged', currentWindowMetadata);
+      console.log('windowChanged', currentWindowMetadata);
+      output.value += 'windowChanged: ' + JSON.stringify(currentWindowMetadata, true, 2) + '\n';
     });
 
+    // Event handler for keyboard events received from other windows
+    crosswindow.on('keyEvent', function (event) {
+      console.log('keyEvent', event);
+      output.value += 'KeyEvent: ' + JSON.stringify(event, true, 2) + '\n';
+    });
+
+    // ^^^ TODO: Adds granular mouse and keyboard events with 1:1 DOM event name mappings
+
+    // Event handler for messages received from other windows
     crosswindow.on('message', function (event) {
       console.log('message', event);
+      output.value += 'Message: ' + JSON.stringify(event, true, 2) + '\n';
     });
 
+    // Retrieve and log all managed CrossWindow instances
+    let allCrossWindows = crosswindow.getWindows();
+    console.log('allCrossWindows', allCrossWindows);
+    output.value += 'All CrossWindows: ' + JSON.stringify(allCrossWindows, true, 2) + '\n';
+
+    // Demonstrate retrieving a specific window by ID and sending a message
+    let theWindow = crosswindow.getWindowById(crosswindow.windowId); // Get the current window by its ID
+    console.log('theWindow', theWindow);
+    if (theWindow) {
+      theWindow.postMessage({
+        type: 'hello',
+        message: 'Hello from self: ' + crosswindow.windowId
+      });
+    }
+
+    // Periodically find and message the "best" window based on a desired position
     setInterval(function () {
       let bestWindow = crosswindow.getBestWindow({
-        // the current position we are at in the current window
-        position: { // currentViewportPosition
-          x: 100,
-          y: 100
-        },
-        // any position on or off the screen, using screenX and screenY as the reference
-        screenPosition: { // requested screen position
-          x: 1000,
-          y: 1000
-        }
+        position: { x: 100, y: 100 },      // Current viewport position within the window
+        screenPosition: { x: 1000, y: 1000 } // Desired screen position for message targeting
       });
 
-      console.log('bestWindow', bestWindow)
-
-      // use BroadcastChannel postMessage to send a message to the best window
+      console.log('bestWindow', bestWindow);
+      // Send a message to the identified best window with arbitrary metadata
       bestWindow.postMessage({
-        // this is all arbitrary metadata
+        // position is optional and used to calculate entry position
+        position: { x: 100, y: 100 },
+        // abritrary metadata
         name: 'Bobby',
         health: 99,
         team: 'Discovery Channel',
-        // Inside our crosswindow.on('message', fn) handler we can add custom logic,
-        // for determining what to do with the data, such as creating a new entity.
-        // The Mantra demo uses previous position to determine entrance position
-        previousPosition: {
-          x: 100,
-          y: 100
-        },
         message: 'Hello from ' + crosswindow.windowId
-      })
+      });
 
-    }, 1000);
+      // truncate the output area to prevent it from getting too long
+      if (output.value.length > 20000) {
+        output.value = output.value.substring(output.value.length - 1000);
+      }
+
+    }, 1000); // Message interval set to 1000 milliseconds (1 second)
 
   });
 </script>
@@ -161,23 +222,8 @@ npm install crosswindow
 **Debugger Latest**
 | Files          | CDN                                         | Size |
 |---------------|--------------------------------------------------|-----------|
-| crosswindow.debugger.js    | [Link](https://yantra.gg/crosswindow.debugger.js)        | 12kb      |
-| crosswindow.debugger.min.js| [Link](https://yantra.gg/crosswindow.debugger.min.js)    | 6kb      |
-
-# How
-
-  - Window Discovery and metadata handled by [LocalStorage](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage)
-  - Message broadcasting handled by [BroadcastChannel](https://developer.mozilla.org/en-US/docs/Web/API/BroadcastChannel)
-  - Window metadata is eventually consistency using Last-Write-Wins (LWW)
-
-# Features
-
-  - [✅] Offline cross-browser window messaging with registry
-  - [✅] Get "best" available window from relative position to screen position
-  - [✅] Optionally broadcast keyboard and mouse events to windows
-  - [🟡] Intersection events for overlapping windows ( WIP needs demo )
-  - [🟡] Cardinal direction helpers for window opening ( N,S,E,W )
-  - [❌] Advanced windowing layouts ( cascade / tile / grid / etc )
+| crosswindow.debugger.js    | [Link](https://yantra.gg/crosswindow.debugger.js)        | 18kb      |
+| crosswindow.debugger.min.js| [Link](https://yantra.gg/crosswindow.debugger.min.js)    | 9kb      |
 
 # Detecting if an element has left the Viewport
 

@@ -142,9 +142,6 @@
 
     // Initialization and game setup
     document.addEventListener('DOMContentLoaded', () => {
-      if (isTouchDevice()) {
-        alert('Please note CrossWindow multi-window demo is not optimized for touch devices.');
-      }
 
       if (window.location.search.includes('win')) {
         document.querySelector('.main')?.remove();
@@ -154,7 +151,7 @@
 
       let game = new MANTRA.Game({
         graphics: ['css'],
-        plugins: ['UnitSpawner', 'GravityWell', 'Player', 'Coin', 'Draggable', 'Hexapod', 'Tower', 'RBush', 'Key', 'Block', 'Collectable', 'Teleporter', 'Gamepad', 'Bullet'],
+        plugins: ['UnitSpawner', 'GravityWell', 'Player', 'Coin', 'Draggable', 'Hexapod', 'Text', 'RBush', 'Key', 'Block', 'Collectable', 'Teleporter', 'Gamepad', 'Bullet'],
         width: 400,
         height: 300,
         disableContextMenu: true

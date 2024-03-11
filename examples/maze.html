@@ -53,13 +53,6 @@
       return 'ontouchstart' in window || navigator.maxTouchPoints;
     }
 
-    // Warn users on touch devices
-    function warnTouchDeviceUsers() {
-      if (isTouchDevice()) {
-        alert('Please note CrossWindow multi-window demo is not optimized for touch devices.');
-      }
-    }
-
     // Remove the help element if 'win' is present in the URL
     function removeHelpForWinUrl() {
       if (window.location.search.includes('win')) {
@@ -254,7 +247,6 @@
 
     // Main entry point
     document.addEventListener('DOMContentLoaded', () => {
-      warnTouchDeviceUsers();
       removeHelpForWinUrl();
 
       const game = initializeGame();

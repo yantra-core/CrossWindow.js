@@ -196,7 +196,7 @@
       if (isTouchDevice()) {
         // check local storage to see if warn has been shown
         if (!localStorage.getItem('crosswindow-touch-warning')) {
-          alert('CrossWindow.js is intended for multi-window applications is not optimized for touch devices.');
+          alert('CrossWindow.js is intended for multi-window applications and is not optimized for touch devices.');
           localStorage.setItem('crosswindow-touch-warning', true);
         }
       }

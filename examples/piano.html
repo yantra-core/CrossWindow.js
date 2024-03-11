@@ -21,9 +21,6 @@
     }
 
     document.addEventListener('DOMContentLoaded', (event) => {
-      if (isTouchDevice()) {
-        alert('Please note CrossWindow multi-window demo is not optimized for touch devices.');
-      }
 
       let game = new MANTRA.Game({
         graphics: ['css'], // array enum, 'babylon', 'css', 'three'
@@ -140,7 +137,8 @@
             kind: key,
             color: 0xffffff, // White key color
             style: {
-              borderRadius: '0px'
+              borderRadius: '0px',
+              zIndex: -2
             },
             collisionStart: pianoKeyCollisionHandler,
             pointerdown: pianoMouseDownHandler,
@@ -195,7 +193,8 @@
               style: {
                 border: 'solid',
                 zIndex: 9999,
-                borderRadius: '0px'
+                borderRadius: '0px',
+                zIndex: -1
               },
               position: {
                 x: xPosition - blackKeyWidth, // Position the black key in the middle of two white keys

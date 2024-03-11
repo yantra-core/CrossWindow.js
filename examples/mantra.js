@@ -3033,6 +3033,7 @@ var _default = exports["default"] = {
   "./plugins/Textarea.min.js": "4ee950d2815ee75c63ae64b260f4b95ffbce227a37ca58a9596d2a317a56b03b",
   "./plugins/TileSet.js": "730987abc1a69c466047444b005ed25d49a6c3dab03c8128701e086e29eb6c57",
   "./plugins/TileSet.min.js": "9a83b80581a1611b7f34e2f8cc4fe9e4eef910ea55372a19a0eda54eb2033649",
+  "./plugins/Tone.js": "d108292b7b9ca54609200b15005a28d4f4c7ba83f882e62b1e3e01f85a3b5d86",
   "./plugins/Tone.min.js": "acfc53c580afb09c8de27813cf407450c63a77068ad6fc5d7f996b854e825ca9",
   "./plugins/Tower.js": "5efe4026709064ff3fc7036f8880fd43572c9b2521a0f4d77d90e432d4980644",
   "./plugins/Tower.min.js": "6c37a14ae5c2afd4f8a617f194ad7407826cac8d3f6f5f876a9a2d3394655bc6",
