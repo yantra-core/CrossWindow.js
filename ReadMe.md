@@ -93,10 +93,6 @@ npm install crosswindow
 <script src="http://yantra.gg/crosswindow.debugger.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', (event) => {
-    // Alert for touch device users because this demo is designed for non-touch, multi-window environments
-    if (isTouchDevice()) {
-      alert('CrossWindow.js is intended for multi-window applications and is not optimized for touch devices.');
-    }
 
     // Initialize CrossWindow with the current window context and default event broadcasting settings
     let crosswindow = new CW.CrossWindow(window, {
