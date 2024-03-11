@@ -1,6 +1,6 @@
 {
   "name": "crosswindow",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "A JavaScript library for cross-window communication and positioning.",
   "main": "./index.js",
   "type": "module",
