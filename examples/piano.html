@@ -11,12 +11,6 @@
   <script src="./crosswindow.js"></script>
   <script src="./crosswindow.debugger.js"></script>
   <link rel="stylesheet" href="./crosswindow.debugger.css">
-
-  <style>
-  
-  
-
-  </style>
 </head>
 
 <body>
@@ -38,9 +32,7 @@
         plugins: ['Tone', 'Text', 'Player', 'Block', 'Border', 'RBush', 'Key', 'Gamepad', 'Bullet'],
         width: 400,
         height: 300,
-        warnNonYantraGameRoot: true,
-        disableContextMenu: false,
-        gameRoot: 'http://192.168.1.80:7777'
+        disableContextMenu: true
       });
 
       game.config.emitKeyboardInputsEvents = true;

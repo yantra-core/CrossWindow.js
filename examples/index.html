@@ -95,9 +95,7 @@
         plugins: ['Player', 'Hexapod', 'Text', 'Coin', 'RBush', 'Key', 'Block', 'Collectable', 'Teleporter', 'Gamepad', 'Bullet'],
         width: 400,
         height: 300,
-        warnNonYantraGameRoot: false,
         disableContextMenu: true,
-        gameRoot: 'http://192.168.1.80:7777'
       });
 
       // Additional game setup
@@ -150,7 +148,7 @@
 
     // Function to create a new player
     function createPlayer(game) {
-      let currentPlayer = game.make().Player().x(50).y(65).createEntity();
+      let currentPlayer = game.make().Player().x(45).y(45).createEntity();
       let globalPosition = calculateGlobalPosition(currentPlayer);
 
       // Equip the player and save its position globally
@@ -223,7 +221,7 @@
       <div>
         <h1>CrossWindow.js + Mantra.js</h1>
         <h3>Move between windows by travelling to the edge of the screen</h3>
-        <h4>Click the top button bar to open <code>new CrossWindow()</code></h4>
+        <h3>Click the top button bar to open <code>new CrossWindow()</code></h3>
 
       </div>
       <div class="help">
@@ -240,8 +238,6 @@
           USB Gamepad Supported
         </p>
 
-
-
       </div>
     </div>
     <div class="exampleLinks">
@@ -253,7 +249,7 @@
       </span>
 
       <span>
-        <a href="https://github.com/yantra-core/CrossWindow.js">Github Source</a>
+        <a href="https://github.com/yantra-core/CrossWindow.js" target="_blank">Github Source</a>
       </span>
 
       <span class="switchExample">

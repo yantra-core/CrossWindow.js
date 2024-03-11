@@ -37,22 +37,26 @@
 
     /* Custom styles for the color selects */
     .color-select {
-      position: fixed; /* Fixed positioning */
+      position: fixed;
+      /* Fixed positioning */
       padding: 10px;
       font-size: 16px;
       cursor: pointer;
       z-index: 9999;
-      transform: translateY(50%); /* Adjust for a slight downward position */
+      transform: translateY(50%);
+      /* Adjust for a slight downward position */
     }
 
     #fountAColorSelect {
       top: 55%;
-      left: 35%; /* Slightly off to the left from the center */
+      left: 35%;
+      /* Slightly off to the left from the center */
     }
 
     #fountBColorSelect {
       top: 55%;
-      right: 35%; /* Slightly off to the right from the center */
+      right: 35%;
+      /* Slightly off to the right from the center */
     }
   </style>
 </head>
@@ -64,40 +68,47 @@
     function isTouchDevice() {
       return 'ontouchstart' in window || navigator.maxTouchPoints;
     }
-  
+
     function getRandomColor(exclude) {
       const royGBiv = ['#FF0000', '#FFA500', '#FFFF00', '#008000', '#0000FF', '#4B0082', '#EE82EE'];
       const filtered = royGBiv.filter(color => color !== exclude);
       return filtered[Math.floor(Math.random() * filtered.length)];
     }
-  
+
+    // Combines particles on collision and mixes their colors
     function particleCollisionHandler(a, b, pair, context) {
+
       if (context.target.type === 'PARTICLE' && pair.isActive !== false) {
         const colorA = context.target.color;
         const colorB = context.owner.color;
         if (colorA !== colorB && game.tick - context.target.ctick > 100) {
           game.removeEntity(context.target.id);
+          game.removeEntity(context.owner.id);
           let configA = game.make().color(colorA).build();
           let configB = game.make().color(colorB).build();
-
           let mixed = game.make().mix(configA).mix(configB).build();
-          
-          game.updateEntity(context.owner.id, {
+          game.createEntity({
+            type: 'PARTICLE',
             color: mixed.color,
-            size: { width: context.owner.size.width * 1.1, height: context.owner.size.height * 1.1 }
+            size: { width: context.owner.size.width * 1.1, height: context.owner.size.height * 1.1 },
+            friction: 0, frictionStatic: 0, frictionAir: 0,
+            position: context.owner.position,
+            velocity: context.owner.velocity,
+            collisionStart: particleCollisionHandler,
+            style: context.owner.style
           });
         }
         pair.isActive = false; // Cancel the collision
       }
     }
-  
+
     function mixColors(colorA, colorB) {
       // This function should implement color mixing logic
       const mixedColor = '#FFFFFF'; // Placeholder for mixed color calculation
       console.log('colorA', colorA, 'colorB', colorB, 'mixed', mixedColor);
       return mixedColor;
     }
-  
+
     function setupEventListeners() {
       document.getElementById('fountAColorSelect').addEventListener('change', function (event) {
         const color = event.target.value;
@@ -110,8 +121,8 @@
         const fountB = game.getEntityByName('fountB');
         game.updateEntity(fountB.id, { color: color });
       });
-     }
-  
+    }
+
     function updateEntitiesColor(color) {
       game.flashMessage(color);
       ['fountA', 'fountB'].forEach(fountName => {
@@ -119,7 +130,7 @@
         game.updateEntity(fount.id, { color: color, ...(fountName === 'fountA' && { metadata: { unitConfig: { color: color } } }) });
       });
     }
-  
+
     function openNewWindow(color) {
       const windowWidth = window.innerWidth;
       const windowHeight = window.outerHeight - 75;
@@ -128,30 +139,32 @@
         width: windowWidth, height: windowHeight, top: window.screenY, left: left
       }, true);
     }
-  
+
     // Initialization and game setup
     document.addEventListener('DOMContentLoaded', () => {
       if (isTouchDevice()) {
         alert('Please note CrossWindow multi-window demo is not optimized for touch devices.');
       }
-  
+
       if (window.location.search.includes('win')) {
         document.querySelector('.main')?.remove();
       }
-  
+
       let color = getRandomColor(window.location.search);
-  
+
       let game = new MANTRA.Game({
         graphics: ['css'],
         plugins: ['UnitSpawner', 'GravityWell', 'Player', 'Draggable', 'Hexapod', 'Tower', 'RBush', 'Key', 'Block', 'Collectable', 'Teleporter', 'Gamepad', 'Bullet'],
-        width: 400, height: 300, warnNonYantraGameRoot: false, disableContextMenu: false, gameRoot: 'http://192.168.1.80:7777'
+        width: 400,
+        height: 300,
+        disableContextMenu: true
       });
-  
+
       configureGame(game);
       // setupEventListeners();
       initializeEntities(game, color);
     });
-  
+
     function configureGame(game) {
       game.use('CrossWindow', { debugger: { showExamplesBar: true } });
       game.config.emitKeyboardInputsEvents = true;
@@ -161,7 +174,7 @@
       game.use('Bullet');
       window.game = game; // Expose game globally
     }
-  
+
     function initializeEntities(game, color) {
       game.start(() => {
         game.setBackground('black');
@@ -170,21 +183,25 @@
         handleSubWindowLogic(game);
       });
     }
-  
+
     function createFountains(game, color) {
       ['fountA', 'fountB'].forEach((name, index) => {
         game.make()
           .name(name)
           .type('FOUNT')
           .UnitSpawner({
+            isSensor: true,
+            sprayAngle: index ? 0 : Math.PI,
             unitConfig: {
               type: 'PARTICLE',
               color: color,
               size: { width: 8, height: 8 },
               friction: 0, frictionStatic: 0, frictionAir: 0,
               position: { x: index ? 200 : -200, y: 0 },
-              sprayAngle: index ? 0 : Math.PI,
-              collisionStart: particleCollisionHandler
+              collisionStart: particleCollisionHandler,
+              style: {
+                zIndex: -1,
+              }
             }
           })
           .color(color)
@@ -195,7 +212,7 @@
           .createEntity();
       });
     }
-  
+
     function createGravityWells(game) {
       const gwConfig = game.make().GravityWell().color('white').size(4).radius(8).isStatic(true).isSensor(true);
       gwConfig.collisionStart((a, b, pair, context) => {
@@ -206,7 +223,7 @@
       gwConfig.position(0, -100).createEntity();
       gwConfig.position(0, 100).createEntity();
     }
-  
+
     function handleSubWindowLogic(game) {
       if (!window.location.search.includes('win')) {
         const currentPlayer = game.make().Player().isSensor().createEntity();
@@ -218,7 +235,7 @@
         }
       }
     }
-  
+
   </script>
 
 </body>

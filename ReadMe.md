@@ -168,7 +168,7 @@ npm install crosswindow
 
   - Window Discovery and metadata handled by [LocalStorage](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage)
   - Message broadcasting handled by [BroadcastChannel](https://developer.mozilla.org/en-US/docs/Web/API/BroadcastChannel)
-  - Light touch of Javascript
+  - Window metadata is eventually consistency using Last-Write-Wins (LWW)
 
 # Features
 
