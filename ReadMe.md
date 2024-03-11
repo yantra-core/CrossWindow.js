@@ -4,7 +4,8 @@
   
 ![cross-window-debugger](https://github.com/yantra-core/CrossWindow.js/assets/70011/6b851631-d4cd-419d-897e-3153d3bf1fb0)
 
-![crosswindow-v7](https://github.com/yantra-core/CrossWindow.js/assets/70011/d6c4a335-6f96-45ce-bc96-b94143518226)
+
+![crosswindow-v7](https://github.com/yantra-core/CrossWindow.js/assets/70011/4383cc93-9826-4800-be8a-7dc9bab072c3)
 
 
 </h3>
