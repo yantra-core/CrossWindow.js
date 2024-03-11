@@ -41,13 +41,15 @@ var CrossWindowDebugger = exports["default"] = /*#__PURE__*/function () {
       showWindowLegend: false,
       showPositionLegend: false,
       showOpenWindowButton: false,
-      showExamplesBar: true
+      showExamplesBar: true,
+      customStyles: false
     };
     for (var key in this.config) {
       if (typeof options[key] === 'boolean') {
         this.config[key] = options[key];
       }
     }
+    this.displayedWindows = {};
     console.log('debugger using opts', 'config', this.config);
     this.initUI();
     this.updateUI();
@@ -166,6 +168,16 @@ var CrossWindowDebugger = exports["default"] = /*#__PURE__*/function () {
           zIndex: '9999'
         });
         document.body.appendChild(currentCrossWindow);
+      }
+    }
+  }, {
+    key: "removeDebugContainer",
+    value: function removeDebugContainer(windowId) {
+      var containerId = "windowBox_".concat(windowId); // Assuming container IDs follow this pattern
+      var containerElement = document.getElementById(containerId);
+      if (containerElement) {
+        containerElement.parentNode.removeChild(containerElement);
+        delete this.displayedWindows[windowId]; // Remove the window from the tracking object
       }
     }
   }, {
@@ -308,18 +320,33 @@ var CrossWindowDebugger = exports["default"] = /*#__PURE__*/function () {
           windowPositionElement.innerText = "x: ".concat(window.screenX, ", y: ").concat(window.screenY);
         }
         if (_this3.config.showOtherWindows) {
-          // for each window updateOrCreateDebugContainer
-          for (var windowId in currentWindows) {
+          var currentWindowIds = Object.keys(currentWindows);
+
+          // Remove UI elements for windows that are no longer active
+          Object.keys(_this3.displayedWindows).forEach(function (displayedWindowId) {
+            if (!currentWindowIds.includes(displayedWindowId)) {
+              _this3.removeDebugContainer(displayedWindowId);
+            }
+          });
+
+          // Update or create UI elements for current windows
+          currentWindowIds.forEach(function (windowId) {
             currentWindows[windowId].windowId = windowId;
             _this3.updateOrCreateDebugContainer(currentWindows[windowId]);
-          }
+            _this3.displayedWindows[windowId] = true; // Mark this window as displayed
+          });
+
+          // Update the tracking object to reflect the current set of windows
+          _this3.displayedWindows = currentWindowIds.reduce(function (acc, id) {
+            acc[id] = true;
+            return acc;
+          }, {});
         }
       }, 300);
     }
   }, {
     key: "updateOrCreateDebugContainer",
     value: function updateOrCreateDebugContainer(currentWindowMetadata) {
-      // console.log("currentWindowMetadata", currentWindowMetadata, this.crossWindowInstance.windowId)
       if (currentWindowMetadata.windowId === this.crossWindowInstance.windowId) {
         return;
       }
@@ -330,9 +357,12 @@ var CrossWindowDebugger = exports["default"] = /*#__PURE__*/function () {
         windowBox = document.createElement('div');
         windowBox.id = boxId;
         windowBox.style.textAlign = 'center';
+        windowBox.classList.add('crosswindow-preview-box');
 
         // Apply the default window box styles
-        Object.assign(windowBox.style, this.defaultWindowBoxStyle);
+        if (this.config.customStyles !== true) {
+          Object.assign(windowBox.style, this.defaultWindowBoxStyle);
+        }
         var windowIdSpan = document.createElement('span');
         windowIdSpan.style.backgroundColor = '#fff';
         windowIdSpan.style.height = '20px';
@@ -345,9 +375,7 @@ var CrossWindowDebugger = exports["default"] = /*#__PURE__*/function () {
         windowBox.appendChild(windowIdSpan);
         container.appendChild(windowBox);
       }
-      var adjustedPosition = calculateAdjustedPosition(currentWindowMetadata.metadata);
-
-      //console.log(currentWindowMetadata.windowId, this.windowId) 
+      var adjustedPosition = calculateAdjustedPosition(currentWindowMetadata);
       if (currentWindowMetadata.windowId === this.crossWindowInstance.windowId) {
         // center the box always its our own
         adjustedPosition.x = window.innerWidth / 2 - 55;

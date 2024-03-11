@@ -12,7 +12,10 @@
   justify-content: center;
   align-items: center;
   gap: 0.5em;
-  padding: 0.5em;
+  padding-top: 0.5em;
+  padding-bottom: 0.5em;
+  padding-left: 0.2em;
+  padding-right: 0.2em;
   background-color: rgba(50, 50, 50, 0.8);
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
@@ -55,9 +58,22 @@
 }
 
 /* Responsive styles for smaller screens */
-@media (max-width: 1250px) {
+@media (max-width: 1350px) {
   .debuggerButtonBar button {
-    padding: 0.4em 0.8em !important;
+    margin: 0;
+    padding-left: 0.3em;
+    padding-right: 0.3em;
+    /* Smaller padding for smaller screens */
+    font-size: 1em !important;
+  }
+}
+
+/* Responsive styles for smaller screens */
+@media (max-width: 786px) {
+  .debuggerButtonBar button {
+    margin: 0;
+    padding-left: 0.3em;
+    padding-right: 0.3em;
     /* Smaller padding for smaller screens */
     font-size: 1em !important;
     /* Smaller font size for smaller screens */

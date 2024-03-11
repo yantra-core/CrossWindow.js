@@ -426,6 +426,12 @@ var EntityBuilder = exports["default"] = /*#__PURE__*/function () {
       this.config.density = value;
       return this;
     }
+  }, {
+    key: "restitution",
+    value: function restitution(value) {
+      this.config.restitution = value;
+      return this;
+    }
 
     // Health and scoring
   }, {
@@ -1122,12 +1128,12 @@ var EntityBuilder = exports["default"] = /*#__PURE__*/function () {
     }
   }]);
   return EntityBuilder;
-}(); // Function to blend two colors
+}();
 function blendColors(color1, color2) {
-  var r = (color1 >> 16) + (color2 >> 16) >> 1;
+  var r = (color1 >> 16 & 0xFF) + (color2 >> 16 & 0xFF) >> 1;
   var g = (color1 >> 8 & 0xFF) + (color2 >> 8 & 0xFF) >> 1;
   var b = (color1 & 0xFF) + (color2 & 0xFF) >> 1;
-  return r << 16 | g << 8 | b;
+  return (r & 0xFF) << 16 | (g & 0xFF) << 8 | b & 0xFF;
 }
 
 /* TODO: refactor to store Map() of OG references for granular removals / updates
@@ -1710,6 +1716,12 @@ var Game = exports.Game = /*#__PURE__*/function () {
     key: "convertColorToHex",
     value: function convertColorToHex(color) {
       return typeof color === 'number' ? "#".concat(color.toString(16)) : color;
+    }
+  }, {
+    key: "getRandomColor",
+    value: function getRandomColor() {
+      var format = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'int';
+      return this.randomColor(format);
     }
   }, {
     key: "randomColor",
@@ -2775,6 +2787,7 @@ function construct(game) {
     radius: new _Component["default"]('radius', game),
     isSensor: new _Component["default"]('isSensor', game),
     owner: new _Component["default"]('owner', game),
+    source: new _Component["default"]('source', game),
     inputs: new _Component["default"]('inputs', game),
     items: new _Component["default"]('items', game),
     hasInventory: new _Component["default"]('hasInventory', game),
@@ -2890,7 +2903,7 @@ var _default = exports["default"] = {
   "./plugins/Block.min.js": "15d67b27b79f808ff076860b9ca72f8b8f357d3065221ff96619eb9a750b2568",
   "./plugins/Bomb.js": "f7a362f2807f41676bcc49901c6c16d0a01b8d741dfddcd726a2d2b2b1619621",
   "./plugins/Bomb.min.js": "a6e453890b05fcab61a54c6addaa2d59fbbfa2b89a0b4429ee5a4f7f6128e02a",
-  "./plugins/Boomerang.js": "9699444f05362f0c1c653dfbfc457a840c4b7216bdb3e501e37392bb5ce8b367",
+  "./plugins/Boomerang.js": "f790c36e97e2205e83291eeb30584f9acbddd6223f84540ed3bbd043f0dda497",
   "./plugins/Boomerang.min.js": "02f004d01651777df7f30dae220c15823a444de9e49deec3af948deb6257ad0f",
   "./plugins/Border.js": "776ff9a840aee4e40b98ac21a2ece7846157de59c843f7fa335d0497baaa2b7a",
   "./plugins/Border.min.js": "3584e32fb60aae9ee6a291e4b3a89722f9eb62b345bc0b68cc06b450c854ade5",
@@ -2908,6 +2921,8 @@ var _default = exports["default"] = {
   "./plugins/ChronoControl.min.js": "a9a511015708f05075041a02a32b9bcfd56e8cc73d07a5836699b0c1c2f1ae83",
   "./plugins/Code.js": "56988694fff92420836c8e44452dcfbe907628d74ccd8a73d15dbac7e777d809",
   "./plugins/Code.min.js": "cf633478b600ab5b225906fad83d8b353d93d756a7dd1f5f95a034b963e710ea",
+  "./plugins/Coin.js": "fa7c93f1337c6accc2707ea751860c8f17feb9159ac4496d4adc49c6ba5cf6f3",
+  "./plugins/Coin.min.js": "a465f0bb843a2f89963390ac4e7b7ab54271a395709b84dd5523bc95ef47a7e0",
   "./plugins/Collectable.js": "0ef48261adc5fc05911a3a1046f68645d9f4776a90e86b78db4e1563d9f91496",
   "./plugins/Collectable.min.js": "d6a2315ab43fe54db6af73c2df8f8eb32bc8484cddcc4075e5b3647458f225d0",
   "./plugins/Collisions.js": "947f90bbc97c4af120e61ac73087b6c20bdb61c78438f6c5c046864495839795",
@@ -2980,7 +2995,7 @@ var _default = exports["default"] = {
   "./plugins/Midi.min.js": "5ef8a15f87866a63e014ecbf3433f93a6c463c26d48a1c3a4448604ee8b5d229",
   "./plugins/MidiGUI.js": "7dc1d8d9bd9fb458409f803e86667468b6d25563c08234a19d24cd733fb9af55",
   "./plugins/MidiGUI.min.js": "ceb780abf5f2fadc904cbb683dde98548db60f5bdf0f90f1398728c76a0f923f",
-  "./plugins/Mouse.js": "6c6ae77d31bff1dca4dc4c59f16b3c49c6f177b220cd9fe8c17a249ef92bef12",
+  "./plugins/Mouse.js": "9b66c9ae5b9e6da7cd6d0c457aa6097f1888cc146199d49c4b19aa80342d9d5a",
   "./plugins/Mouse.min.js": "8a03cb980883362f32ee4616caaeae0dcf2a3b7dddd371537fded7ce533f95bc",
   "./plugins/PingTime.js": "df3ff245078e918c5c09e017266c29e58973a6b97e025c931bc25af0cc176ffe",
   "./plugins/PingTime.min.js": "df610dd9876c1b43e3c3a1e7c36273842332b0a51b2f33a150ec926f8155bca0",
@@ -3022,8 +3037,8 @@ var _default = exports["default"] = {
   "./plugins/Tone.min.js": "acfc53c580afb09c8de27813cf407450c63a77068ad6fc5d7f996b854e825ca9",
   "./plugins/Tower.js": "5efe4026709064ff3fc7036f8880fd43572c9b2521a0f4d77d90e432d4980644",
   "./plugins/Tower.min.js": "6c37a14ae5c2afd4f8a617f194ad7407826cac8d3f6f5f876a9a2d3394655bc6",
-  "./plugins/UnitSpawner.js": "7838dd890c8a7413d9117819e4ad5d79363c363efd9548d260ff0b53d7256bda",
-  "./plugins/UnitSpawner.min.js": "9337e00ad6649b3a726d4b9f03458c4dc3f24fd0e7325d1a80dafbfba9921d21"
+  "./plugins/UnitSpawner.js": "2056520da61d0253f6d8817f6073e7f15db8b35a2e71955172aec2d36c88d9c1",
+  "./plugins/UnitSpawner.min.js": "6af7a4bb8ad60fc8adf419016c8515f6559ee9a81db1c7bf8df8db75fd1c3154"
 };
 
 },{}],13:[function(require,module,exports){
@@ -4562,13 +4577,15 @@ function ensureColorInt(color) {
   var colorNameToHex = {
     red: '#FF0000',
     green: '#00FF00',
-    blue: '#fff007',
+    blue: '#0000FF',
     black: '#000000',
     white: '#FFFFFF',
     yellow: '#FFFF00',
     purple: '#800080',
     orange: '#FFA500',
-    pink: '#FFC0CB'
+    pink: '#FFC0CB',
+    indigo: '#4B0082',
+    violet: '#EE82EE'
     // Add more common colors as needed
   };
 

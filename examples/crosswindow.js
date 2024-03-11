@@ -43,7 +43,6 @@ var CommunicationManager = exports["default"] = /*#__PURE__*/function () {
     this.metadataManager = metadataManager;
     this.eventReceiver = new _EventReceiver["default"](cw);
     this.setupListeners();
-    this.startPing();
   }
   _createClass(CommunicationManager, [{
     key: "setupListeners",
@@ -83,17 +82,6 @@ var CommunicationManager = exports["default"] = /*#__PURE__*/function () {
             break;
         }
       };
-    }
-  }, {
-    key: "startPing",
-    value: function startPing() {
-      var _this2 = this;
-      setInterval(function () {
-        _this2.channel.postMessage({
-          action: 'ping',
-          sourceWindowId: _this2.windowId
-        });
-      }, 1000); // Send ping every second
     }
   }, {
     key: "sendMessage",
@@ -176,11 +164,10 @@ var CrossWindow = exports["default"] = /*#__PURE__*/function () {
     this.getWindowById = this.metadataManager.getWindowById.bind(this.metadataManager);
     this.getCurrentWindows = this.metadataManager.getCurrentWindows.bind(this.metadataManager);
     this.getWindowMetadata = this.metadataManager.getWindowMetadata.bind(this);
-    this.pollWindows = this.metadataManager.pollWindows.bind(this.metadataManager);
     this.postMessage = this.communicationManager.sendMessage.bind(this.communicationManager);
     this.registerWindow();
-    this.pollWindows();
     this.metadataManager.startHeartbeat();
+    this.metadataManager.startWindowEventPolling();
   }
   _createClass(CrossWindow, [{
     key: "on",
@@ -481,17 +468,19 @@ var MetadataManager = exports["default"] = /*#__PURE__*/function () {
     this.currentWindows = {};
   }
   _createClass(MetadataManager, [{
+    key: "startHeartbeat",
+    value: function startHeartbeat() {
+      var _this = this;
+      setInterval(function () {
+        _this.updateWindowMetadata(); // Update current window's metadata
+        _this.removeInactiveWindows(660); // milliseconds
+      }, 200); // Update every 200ms
+    }
+  }, {
     key: "getCurrentWindows",
     value: function getCurrentWindows() {
-      var _this = this;
-      var active = {};
-      // for each non-null currentWindows
-      Object.keys(this.currentWindows).forEach(function (windowId) {
-        if (_this.currentWindows[windowId]) {
-          active[windowId] = _this.currentWindows[windowId];
-        }
-      });
-      return active;
+      var allWindowsMetadata = JSON.parse(localStorage.getItem(this.config.metadataKey)) || {};
+      return allWindowsMetadata;
     }
 
     // Method to abstract the window object creation logic
@@ -549,73 +538,6 @@ var MetadataManager = exports["default"] = /*#__PURE__*/function () {
       return this.createWindowObject(windowId, metadata);
     }
   }, {
-    key: "startHeartbeat",
-    value: function startHeartbeat() {
-      var _this4 = this;
-      setInterval(function () {
-        _this4.updateWindowMetadata(); // Update current window's metadata
-        _this4.removeInactiveWindows(200); // milliseconds
-      }, 200); // Update every 200ms
-    }
-  }, {
-    key: "pollWindows",
-    value: function pollWindows() {
-      var _this5 = this;
-      var prevMetadata = this.getWindows(); // Store the initial state of all windows.
-
-      setInterval(function () {
-        var allWindows = _this5.getWindows(); // Fetch the current state of all windows.
-
-        // Check for closed windows by comparing prevMetadata with the current state
-        Object.keys(prevMetadata).forEach(function (windowId) {
-          if (windowId === _this5.windowId) return; // Skip the current window
-          if (!allWindows.hasOwnProperty(windowId)) {
-            // If a window in prevMetadata is not present in allWindows, it's been closed
-            _this5.emit('windowClosed', {
-              windowId: windowId,
-              metadata: prevMetadata[windowId]
-            });
-          }
-        });
-
-        // Iterate through all current windows to check for changes or new windows
-        Object.keys(allWindows).forEach(function (windowId) {
-          var currentWindow = allWindows[windowId];
-          var prevWindow = prevMetadata[windowId];
-
-          // Check if the window is new
-          if (!prevWindow) {
-            var otherWindow = {};
-            otherWindow.postMessage = function (data) {
-              data.targetWindowId = windowId;
-              console.log('sending meta', data);
-              data.action = 'message';
-              _this5.cw.communicationManager.sendMessage(data);
-            };
-            otherWindow.windowId = windowId;
-            otherWindow.metadata = currentWindow.metadata;
-
-            // Construct a new crosswindow object with scoped postMessage
-            // Emit an event for the new window
-            _this5.emit('windowOpened', otherWindow);
-          }
-
-          // Check if the window's metadata has changed
-          if (prevWindow && _this5.hasMetadataChanged(prevWindow.metadata, currentWindow.metadata)) {
-            // Emit an event for the changed window
-            _this5.emit('windowChanged', currentWindow);
-          }
-
-          // Update the previous metadata state and current windows state for the next iteration
-          prevMetadata[windowId] = currentWindow;
-          _this5.currentWindows[windowId] = currentWindow;
-        });
-
-        // Update prevMetadata to reflect the current state for the next iteration
-        prevMetadata = _objectSpread({}, allWindows);
-      }, 15);
-    }
-  }, {
     key: "hasMetadataChanged",
     value: function hasMetadataChanged(prevMetadata, currentMetadata) {
       return prevMetadata.position.x !== currentMetadata.position.x || prevMetadata.position.y !== currentMetadata.position.y || prevMetadata.size.width !== currentMetadata.size.width || prevMetadata.size.height !== currentMetadata.size.height;
@@ -639,30 +561,72 @@ var MetadataManager = exports["default"] = /*#__PURE__*/function () {
     value: function updateWindowMetadata() {
       var metadata = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.getWindowMetadata();
       var allWindowsMetadata = JSON.parse(localStorage.getItem(this.config.metadataKey)) || {};
-      allWindowsMetadata[this.windowId] = _objectSpread(_objectSpread({}, metadata), {}, {
-        lastActive: Date.now()
-      });
-      localStorage.setItem(this.config.metadataKey, JSON.stringify(allWindowsMetadata));
+      var now = Date.now();
+
+      // Check if the current window's metadata exists or if the incoming update is more recent
+      if (!allWindowsMetadata.hasOwnProperty(this.windowId) || now > allWindowsMetadata[this.windowId].lastUpdate) {
+        // Update the metadata with the current timestamp and save it
+        allWindowsMetadata[this.windowId] = _objectSpread(_objectSpread({}, metadata), {}, {
+          lastActive: now,
+          lastUpdate: now
+        });
+        // console.log('Updating metadata for window:', this.windowId, allWindowsMetadata[this.windowId]);
+        localStorage.setItem(this.config.metadataKey, JSON.stringify(allWindowsMetadata));
+      } else {
+        // console.log(`Skipped update for window ID ${this.windowId} due to older timestamp.`);
+      }
+    }
+  }, {
+    key: "startWindowEventPolling",
+    value: function startWindowEventPolling() {
+      var _this4 = this;
+      this.prevMetadata = this.getWindows(); // Initial setup for comparison
+
+      setInterval(function () {
+        var allWindows = _this4.getWindows(); // Fetch current state of all windows
+
+        // Check for closed windows
+        Object.keys(_this4.prevMetadata).forEach(function (windowId) {
+          if (windowId !== _this4.windowId && !allWindows.hasOwnProperty(windowId)) {
+            _this4.emit('windowClosed', {
+              windowId: windowId,
+              metadata: _this4.prevMetadata[windowId]
+            });
+          }
+        });
+
+        // Check for new or changed windows
+        Object.keys(allWindows).forEach(function (windowId) {
+          var currentWindow = allWindows[windowId];
+          var prevWindow = _this4.prevMetadata[windowId];
+          if (!prevWindow) {
+            _this4.emit('windowOpened', currentWindow); // Emit event for new window
+          } else if (_this4.hasMetadataChanged(prevWindow.metadata, currentWindow.metadata)) {
+            _this4.emit('windowChanged', currentWindow); // Emit event for changed window
+          }
+        });
+        _this4.prevMetadata = allWindows; // Update for next iteration
+      }, 200); // Frequency of polling
     }
   }, {
     key: "removeInactiveWindows",
     value: function removeInactiveWindows() {
-      var _this6 = this;
+      var _this5 = this;
       var timeout = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1000;
-      var allWindowsMetadata = JSON.parse(localStorage.getItem(this.config.metadataKey)) || {};
+      var currentWindowsInLocalStorage = JSON.parse(localStorage.getItem(this.config.metadataKey)) || {};
       var currentTime = Date.now();
       //console.log('removeInactiveWindows', allWindowsMetadata, currentTime, timeout)
-      Object.entries(allWindowsMetadata).forEach(function (_ref) {
+      Object.entries(currentWindowsInLocalStorage).forEach(function (_ref) {
         var _ref2 = _slicedToArray(_ref, 2),
           windowId = _ref2[0],
           metadata = _ref2[1];
         if (currentTime - metadata.lastActive > timeout) {
           // console.log('removeInactiveWindows', windowId, metadata, currentTime, timeout)
-          delete allWindowsMetadata[windowId];
-          _this6.currentWindows[windowId] = null;
+          delete currentWindowsInLocalStorage[windowId];
+          _this5.currentWindows[windowId] = null;
         }
       });
-      localStorage.setItem(this.config.metadataKey, JSON.stringify(allWindowsMetadata));
+      localStorage.setItem(this.config.metadataKey, JSON.stringify(currentWindowsInLocalStorage));
     }
   }, {
     key: "markWindowAsActive",
@@ -768,6 +732,7 @@ function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len 
 function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
 function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 // TODO: refactor this file a bit and split into multiple files with classes
+
 // Remark: We'll need more advanced logic for window layout and positioning ( cascadee / tile / grid / etc )
 function calculateEntryPosition(direction, position, bestWindowId) {
   var zoomScale = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
@@ -794,7 +759,7 @@ function calculateEntryPosition(direction, position, bestWindowId) {
   //console.log('bestWindowSize', bestWindowSize)
 
   // Adjust this buffer size as needed
-  var buffer = 44; // any small values should work, without buffer the entity may get stuck in teleportation loop
+  var buffer = 40; // any small values should work, without buffer the entity may get stuck in teleportation loop
   // console.log('calculateEntryPosition', direction, position)
 
   switch (direction) {
@@ -823,60 +788,58 @@ function calculateDistance(point1, point2) {
   return Math.sqrt(dx * dx + dy * dy);
 }
 function determineCardinalDirection(entityData) {
+  if (entityData.direction) {
+    return entityData.direction;
+  }
   var screenPosition = entityData.screenPosition;
-  var centerX = window.outerWidth / 2;
-  var centerY = window.outerWidth / 2;
 
-  // Calculate the differences between the screen position and the center
-  var diffX = Math.abs(screenPosition.x - centerX);
-  var diffY = Math.abs(screenPosition.y - centerY);
-  // console.log("diffX", diffX, "diffY", diffY);
+  // Window's screen position and size to determine the edges
+  var windowLeft = window.screenX;
+  var windowRight = window.screenX + window.outerWidth;
+  var windowTop = window.screenY;
+  var windowBottom = window.screenY + window.outerHeight;
 
-  // Determine the predominant direction based on the larger difference
-  if (diffX > diffY) {
-    // Remark: These conditionals shouldn't be required, but are covering the corner cases ( literally )
-    // We should be able to remove these lines assuming all coordinate data is accurate in this scope
-    // It's better we catch all error edge cases first, and then remove the checks later
-    if (entityData.velocity && entityData.velocity.y > 0.1) {
-      return 'S';
-    }
-    if (entityData.velocity && entityData.velocity.y < -0.1) {
-      return 'N';
-    }
+  // Differences to the window edges
+  var diffToLeft = screenPosition.x - windowLeft;
+  var diffToRight = windowRight - screenPosition.x;
+  var diffToTop = screenPosition.y - windowTop;
+  var diffToBottom = windowBottom - screenPosition.y;
 
-    // Proceed with regular logic
-    return screenPosition.x < centerX ? 'W' : 'E'; // West or East
-  } else {
-    // Remark: These conditionals shouldn't be required, but are covering the corner cases ( literally )
-    // We should be able to remove these lines assuming all coordinate data is accurate in this scope
-    // It's better we catch all error edge cases first, and then remove the checks later
-    if (entityData.velocity && entityData.velocity.x > 0.1) {
-      return 'E';
-    }
-    if (entityData.velocity && entityData.velocity.x < -0.1) {
-      return 'W';
-    }
+  // Total differences for horizontal and vertical directions
+  //const totalHorizontalDiff = diffToLeft + diffToRight;
+  //const totalVerticalDiff = diffToTop + diffToBottom;
 
-    // Proceed with regular logic
-    return screenPosition.y < centerY ? 'N' : 'S'; // North or South
+  // Compare all the diffs and see which is the smallest
+  // and return the direction
+  if (diffToLeft < diffToRight && diffToLeft < diffToTop && diffToLeft < diffToBottom) {
+    return 'W';
+  } else if (diffToRight < diffToLeft && diffToRight < diffToTop && diffToRight < diffToBottom) {
+    return 'E';
+  } else if (diffToTop < diffToLeft && diffToTop < diffToRight && diffToTop < diffToBottom) {
+    return 'N';
+  } else if (diffToBottom < diffToLeft && diffToBottom < diffToRight && diffToBottom < diffToTop) {
+    return 'S';
   }
 }
 function getBestWindow(entityData) {
   var _this = this;
   var zoomScale = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1;
   // TODO: entityData.position? we need an API semantic here for .position and .screenPosition
+  //console.log('calling getBestWindow.determineCardinalDirection', entityData)
   var direction = determineCardinalDirection(entityData);
+  //console.log('got back direction', direction)
   var allWindowsMetadata = JSON.parse(localStorage.getItem(this.config.metadataKey)) || {};
-  if (Object.keys(allWindowsMetadata).length === 0) {
-    game.flashMessage('no other windows found');
-    return;
-  }
   var currentWindowPosition = getCurrentWindowPosition();
   var currentWindowSize = getCurrentWindowSize();
   var bestWindowId = null;
   var minEdgeDistance = Infinity;
   var fallbackWindowId = null;
   var minFallbackDistance = Infinity;
+  if (Object.keys(allWindowsMetadata).length === 0) {
+    bestWindowId = this.windowId;
+  }
+
+  // console.log('allWindowsMetadata', allWindowsMetadata, 'currentWindowPosition', currentWindowPosition, 'currentWindowSize', currentWindowSize, 'direction', direction, 'entityData', entityData, 'zoomScale', zoomScale)
   Object.entries(allWindowsMetadata).forEach(function (_ref) {
     var _ref2 = _slicedToArray(_ref, 2),
       windowId = _ref2[0],
@@ -1013,9 +976,16 @@ function prepareBestWindowResponse(cw, bestWindowId, direction, entityData) {
     direction: direction,
     entryPosition: calculateEntryPosition(direction, entityData.position, bestWindowId, zoomScale),
     postMessage: function postMessage(data) {
-      //console.log('previous position in window', entityData.position)
+      // console.log('previous position in window', data.position)
+      if (typeof data.position === 'undefined') {
+        data.position = {
+          x: 0,
+          y: 0,
+          z: 0
+        }; // default position if none provided
+      }
       var newEntryPosition = calculateEntryPosition(direction, data.position, bestWindowId, zoomScale);
-      //console.log('newly calcualted position in window', newEntryPosition)
+      //console.log('newly calculated position in window', newEntryPosition)
       data.position = newEntryPosition;
       data.direction = direction;
       data.targetWindowId = bestWindowId;
