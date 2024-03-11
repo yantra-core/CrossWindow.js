@@ -111,7 +111,7 @@ npm install crosswindow
     });
 
     // Add click event listeners to buttons for opening new windows
-    document.querySelectorAll('#openWindowButtons button').forEach(button => {
+    document.querySelectorAll('button').forEach(button => {
       button.addEventListener('click', () => {
         const windowWidth = window.innerWidth;
         const windowHeight = window.outerHeight - 75;
@@ -160,8 +160,6 @@ npm install crosswindow
       console.log('keyEvent', event);
       output.value += 'KeyEvent: ' + JSON.stringify(event, true, 2) + '\n';
     });
-
-    // ^^^ TODO: Adds granular mouse and keyboard events with 1:1 DOM event name mappings
 
     // Event handler for messages received from other windows
     crosswindow.on('message', function (event) {
